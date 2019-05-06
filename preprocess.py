@@ -2,8 +2,8 @@ import os
 import xml.etree.cElementTree as ET
 import numpy as np
 from tqdm import tqdm
-import itertools
 import sys
+from flags import FLAGS
 
 
 #####################################################################
@@ -26,8 +26,9 @@ def read_data(path):
 
 	for text in tqdm(entity_texts):
 		data_path = os.path.join(path, text)
-		root = ET.parse(data_path).getroot()
 		data_point = []
+
+		root = ET.parse(data_path).getroot()
 		data_point.append(text.split(".xml")[0])
 
 		for entity_paragraph in root.findall("doc"):
@@ -38,7 +39,6 @@ def read_data(path):
 	return data
 
 
-#Todo: Memory issue for embeddings in RAM, control with 32 RAM otherwise use smaller embedding set
 #########################################################################################################################
 # Read GloVe embeddings
 #
@@ -46,7 +46,7 @@ def read_data(path):
 #
 # output: embeddings (Dict)   - Dictionary of the embeddings
 def read_embeddings(path):
-	embeddings =  {}
+	embeddings = {}
 
 	with open(path, "r", encoding="utf-8") as f:
 		for line in tqdm(f):
@@ -54,4 +54,58 @@ def read_embeddings(path):
 			word = values.pop(0)
 			embeddings[word] = list(map(float, values))
 
+	FLAGS.embedding_size = len(embeddings['the'])
+
 	return embeddings
+
+
+#########################################################################################################################
+# Partition whole dataset into train and test
+#
+# input: data (list)        - list of string as data (N, 1+M)
+#
+# output: training_data, test_data (list)   - List of string as partitioned data
+def partition_data(data):
+
+	training_data = data[0:int(len(data)*FLAGS.training_size)]
+	test_data = data[int(len(data)*FLAGS.training_size):-1]
+
+	return training_data, test_data
+
+
+#########################################################################################################################
+# Lowercasing data - needed as function because data type is so custom to do it inside another function
+#
+# input: data (list)     - list of string as data (N, 1+M)
+#
+# output: new_data (list)   - List of string as data-lowercased
+def lowercase_data(data):
+	new_data = []
+
+	for point in data:
+		new_point = []
+
+		for entity in point:
+			if point.index(entity) != 0:
+				new_point.append(entity.lower())
+			else:
+				new_point.append(entity)
+
+		new_data.append(new_point)
+
+	return new_data
+
+
+#########################################################################################################################
+# Pipeline of the processes that will occur on the data itself
+#
+# input: path (string)     - Path of the dataset
+#
+# output: training_data, test_data (list)   - training and test data partition
+def get_data(path):
+
+	data = read_data(path)
+	data = lowercase_data(data)
+	training_data, test_data = partition_data(data)
+
+	return training_data, test_data
