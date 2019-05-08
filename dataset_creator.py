@@ -10,19 +10,19 @@ import argparse
 
 link_ak = "https://en.wikipedia.org/wiki/Wikipedia:Links_to_(disambiguation)_pages/A-K" #2-12 (2 and 12 included)
 link_lz = "https://en.wikipedia.org/wiki/Wikipedia:Links_to_(disambiguation)_pages/L-Z" #0-14 (0 and 14 included)
-link = link_lz
+link = link_ak
 
-dataset_folder = "/home/darg2/Desktop/dataset"
+dataset_folder = "C:\\Users\\polat\\Desktop\\tobedeleted"#"/home/darg2/Desktop/dataset"
 wikipedia = "https://en.wikipedia.org"
 
 print("----- Data collection has started -----")
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-i', type=int, help='Number of the char')
+#parser = argparse.ArgumentParser()
+#parser.add_argument('-i', type=int, help='Number of the char')
 
-args = parser.parse_args()
+#args = parser.parse_args()
 
-char_index = args.i
+char_index = 2#args.i
 
 
 flag = True
@@ -133,6 +133,7 @@ for ambigous_link in ambigous_links:
 			end_subtopics = ["See also", "References", "External links", "Sources", "Notes"]
 
 			check = False
+
 			####################################################
 			#### Parse the informative texts of the page ###
 			for line in page_text.split("\n"):
