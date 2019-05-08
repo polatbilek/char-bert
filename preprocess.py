@@ -48,6 +48,7 @@ def read_data(path):
 def read_embeddings(path):
 	embeddings = {}
 
+	print("Reading embeddings...")
 	with open(path, "r", encoding="utf-8") as f:
 		for line in tqdm(f):
 			values = line.strip().split(" ")
