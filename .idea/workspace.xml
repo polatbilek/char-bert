@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a411aaab-5d0c-4d7c-b9e2-63b8958ac701" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/tez.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/tez.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dataset_creator.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataset_creator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/embedding_average.py" beforeDir="false" afterPath="$PROJECT_DIR$/embedding_average.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flags.py" beforeDir="false" afterPath="$PROJECT_DIR$/flags.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -33,8 +29,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/embedding_average.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1026">
-              <caret line="57" column="35" selection-start-line="57" selection-start-column="35" selection-end-line="57" selection-end-column="35" />
+            <state relative-caret-position="329">
+              <caret line="57" column="53" lean-forward="true" selection-start-line="57" selection-start-column="53" selection-end-line="57" selection-end-column="53" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -300,7 +296,7 @@
       <workItem from="1557124990171" duration="5784000" />
       <workItem from="1557321145379" duration="355000" />
       <workItem from="1557321513915" duration="443000" />
-      <workItem from="1557335535526" duration="9217000" />
+      <workItem from="1557335535526" duration="9465000" />
     </task>
     <task id="LOCAL-00001" summary="reading dataset and embedding added, memory issue todo">
       <created>1556890501413</created>
@@ -323,17 +319,25 @@
       <option name="project" value="LOCAL" />
       <updated>1557140295165</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="embedding average is codded and conducted only as training without threshold determination.">
+      <created>1557347212966</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1557347212966</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="64570000" />
+    <option name="totallyTimeSpent" value="64818000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="DB Browser" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.13965885" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13965885" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="DB Execution Console" />
@@ -349,7 +353,7 @@
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.5002767" side_tool="true" weight="0.5096983" />
       <window_info anchor="bottom" id="Terminal" order="11" />
-      <window_info anchor="bottom" id="Python Console" order="12" sideWeight="0.4997233" weight="0.37486458" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="12" sideWeight="0.4997233" visible="true" weight="0.37378114" />
       <window_info anchor="right" id="Google Cloud Storage" />
       <window_info anchor="right" id="Json Parser" />
       <window_info anchor="right" id="R Graphics" />
@@ -432,7 +436,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="reading dataset and embedding added, memory issue todo" />
     <MESSAGE value="preprocess and embedding reading done, only skeleton is created on model" />
-    <option name="LAST_COMMIT_MESSAGE" value="preprocess and embedding reading done, only skeleton is created on model" />
+    <MESSAGE value="embedding average is codded and conducted only as training without threshold determination." />
+    <option name="LAST_COMMIT_MESSAGE" value="embedding average is codded and conducted only as training without threshold determination." />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/A_Christmas_Carol.xml" />
@@ -484,8 +489,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/embedding_average.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1026">
-          <caret line="57" column="35" selection-start-line="57" selection-start-column="35" selection-end-line="57" selection-end-column="35" />
+        <state relative-caret-position="329">
+          <caret line="57" column="53" lean-forward="true" selection-start-line="57" selection-start-column="53" selection-end-line="57" selection-end-column="53" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

@@ -42,22 +42,9 @@ class Embed_Average:
 
 			self.vectors.append(averaged)
 
-		above_threshold = 0
-		total = 0
-
-		for i in tqdm(range(len(self.vectors))):
-			for j in range(len(self.vectors[i])):
-				if j != 0:
-					for k in range(j+1, len(self.vectors[i])):
-						if distance.cosine(self.vectors[i][j], self.vectors[i][k]) >= self.threshold:
-							above_threshold += 1
-
-						total += 1
-
-
 		#With stop words Ratio:    0.0214383949518647
 		#Without stop words Ratio: 0.1898713696302888
-		print("Ratio: ", str(above_threshold/total))
+
 		return self.vectors
 
 
