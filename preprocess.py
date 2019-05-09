@@ -56,6 +56,8 @@ def read_embeddings(path):
 			embeddings[word] = list(map(float, values))
 
 	FLAGS.embedding_size = len(embeddings['the'])
+	embeddings["UNK"] = np.random.randn(FLAGS.embedding_size)
+	embeddings["PAD"] = np.zeros(FLAGS.embedding_size)
 
 	return embeddings
 
