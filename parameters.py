@@ -8,8 +8,8 @@ class flags(object):
 		self.training_set_size = 0.8
 
 		#input file paths
-		self.word_embed_path = "/home/darg2/Desktop/crawl-300d-2M.vec" #change word embedding size too
-		self.training_data_path = "/home/darg2/Desktop/blogs"
+		self.word_embed_path = "C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec" #"/home/darg2/Desktop/crawl-300d-2M.vec"
+		self.training_data_path = "C:\\Users\\polat\\Desktop\\new_blogs" #"/home/darg2/Desktop/blogs"
 		self.test_data_path = "/home/darg2/Downloads/turkish-twitter-dataset-gender-labeled/turk-tweet-test"
 		self.char_embed_path = "./char_embeddings.27B.25d.txt"
 

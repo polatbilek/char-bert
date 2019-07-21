@@ -6,6 +6,7 @@ from preprocess import *
 from model import network
 from train import *
 from eval import *
+import time
 import sys
 
 ##combines the train and eval into a single script
@@ -14,12 +15,15 @@ if __name__ == "__main__":
 	print("---PREPROCESSING STARTED---")
 
 	print("\treading word embeddings...")
-	# embeddings = readFastTextEmbeddings(FLAGS.word_embed_path)
+	old = time.time()
+	#embeddings = readFastTextEmbeddings(FLAGS.word_embed_path)
+	print("reading embeddings took " + str(time.time() - old) + " sec")
 
 	print("\treading tweets...")
-	ground_truth, data = readData(FLAGS.training_data_path)
+	old = time.time()
+	ground_truth = readData(FLAGS.training_data_path)
+	print("reading data took "+ str(time.time()-old) + " sec")
 
-	print("asdasdsa")
 	sys.exit()
 	print("\tconstructing datasets and network...")
 	training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths, test_tweets, test_users, test_seq_lengths = partite_dataset(

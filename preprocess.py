@@ -1,4 +1,3 @@
-import gensim, itertools
 import numpy as np
 from parameters import FLAGS
 import xml.etree.ElementTree as xmlParser
@@ -7,57 +6,7 @@ import os
 import sys
 import random
 import io
-
-
-
-
-
-#########################################################################################################################
-# Read GloVe embeddings
-#
-# input: String (path)        - Path of embeddings to read
-#        int (embedding_size) - Size of the embeddings
-#
-# output: dict (vocab)             - Dictionary of the vocabulary in GloVe
-#         numpy array (embeddings) - Embeddings of the words in GloVe
-def readGloveEmbeddings(path, embedding_size):
-    DOC_LIMIT = None
-    in_file = gensim.models.word2vec.LineSentence(path)
-
-    lines = lambda: itertools.islice(in_file, DOC_LIMIT)
-    model_tuple = lambda: ((line[0], [float(value) for value in line[1:]]) for line in lines())
-
-    # extract the keys and values so we can iterate over them
-    model_dict = dict(model_tuple())
-    temp_vocab = list(model_dict.keys())
-    temp_vectors = list(model_dict.values())
-
-    vocab = list()
-    vectors = list()
-    count = 0
-
-    for line in temp_vectors:
-        if len(line) == embedding_size:
-            vocab.append(temp_vocab[count])
-            vectors.append(temp_vectors[count])
-        count += 1
-    del temp_vectors, temp_vocab, model_dict
-
-    # add special tokens
-    vocab.append("UNK")
-    vectors.append(np.random.randn(embedding_size))
-    vocab.append("PAD")
-    vectors.append(np.zeros(embedding_size))
-
-    embeddings = np.array(vectors)
-
-    vocabulary = {}
-
-    for i in range(len(vocab)):
-        vocabulary[vocab[i]] = i
-
-    return vocabulary, embeddings
-
+from tqdm import tqdm
 
 
 #########################################################################################################################
@@ -94,12 +43,14 @@ def readFastTextEmbeddings(path):
 #         data (list): each element has a list= [sequence_length, user_id, text(as a list of words)]
 def readData(path):
 	tokenizer = TweetTokenizer()
+	job_index = 0
 
 	ground_truth = {}
 	jobs = {}
-	job_index = 0
+	data = []
+	count = 0
 
-	for user in os.listdir(path):
+	for user in tqdm(os.listdir(path)):
 		infos = user.split(".")
 		features = []
 
@@ -125,71 +76,22 @@ def readData(path):
 
 		ground_truth[infos[0]] = features
 
-	# TODO: read data, in specified form
-
-
-	return ground_truth
-
-	'''
 		xml_file_name = os.path.join(path,user)
-		if sys.version_info[0] < 3:
-            xmlFile = open(xml_file_name + ".xml", "r")
-        else:
-            xmlFile = open(xml_file_name + ".xml", "r", encoding="utf-8")
-
-        rootTag = xmlParser.parse(xmlFile).getroot()
-
-        # for each tweet
-        for documents in rootTag:
-            for document in documents.findall("document"):
-                words = tokenizer.tokenize(document.text)
-                training_set.append([user, words])  # author-tweet pairs
-                seq_lengths.append(len(words))  # length of tweets will be fed to rnn as timestep size
-
-    tweets = [row[1] for row in training_set]
-    users = [row[0] for row in training_set]
-
-    return tweets, users, target_values, seq_lengths
-		'''
+		xmlFile = open(xml_file_name, "r", encoding="utf8")
 
 
-#########################################################################################################################
-# Shuffles dataset and partites it into 2 part training, validation
-#
-# input: list (rnn_vectors)  - List of rnn vectors corrisponding to the username indexes
-#	     list (cnn_vectors)   - List of cnn vectors corrisponding to the username indexes
-#	     list (image_vectors) - List of image model vectors corrisponding to the username indexes
-#            list (users) - List of usernames
-#
-# output: too long, the return line can easily be understood i suppose
-def partite_dataset_vectors(rnn_vectors, cnn_vectors, image_vectors, users):
+		try:
+			for post in xmlParser.parse(xmlFile).findall("post"):
+				words = tokenizer.tokenize(post.text)
+				data.append([len(words), infos[0], words])
+		except:
+			print(infos)
+			print(xmlParser.parse(xmlFile).findall("post"))
 
-	c = list(zip(rnn_vectors, cnn_vectors, image_vectors, users))
-	random.shuffle(c)
-	rnn_vectors, cnn_vectors, image_vectors, users = zip(*c)
+	print("total fail: ")
+	print(count)
 
-	rnn_vectors = list(rnn_vectors)
-	cnn_vectors = list(cnn_vectors)
-	image_vectors = list(image_vectors)
-	users = list(users)
-
-	training_set_size = int(len(users) * FLAGS.training_set_size)
-
-	training_rnn_vectors = rnn_vectors[:training_set_size]
-	valid_rnn_vectors = rnn_vectors[training_set_size:]
-
-	training_cnn_vectors = cnn_vectors[:training_set_size]
-	valid_cnn_vectors = cnn_vectors[training_set_size:]
-
-	training_image_vectors = image_vectors[:training_set_size]
-	valid_image_vectors = image_vectors[training_set_size:]
-
-	training_users = users[:training_set_size]
-	valid_users = users[training_set_size:]
-				
-
-	return training_rnn_vectors, training_cnn_vectors, training_image_vectors, training_users, valid_rnn_vectors, valid_cnn_vectors, valid_image_vectors, valid_users
-
+	return ground_truth, data
 
 
 #########################################################################################################################
@@ -223,26 +125,6 @@ def prepTestData(tweets, user, target):
     return test_input, test_output
 
 
-
-
-
-
-#########################################################################################################################
-# Returns the one-hot gender vectors of users in correct order (index matching)
-#
-# input: list (users)   - List of usernames
-#        dict (targets) - Dictionary of username(key) and one-hot gender vector(value)
-#
-# output: list (target_values) - List of one-hot gender vectors with corresponding indexes
-def user2target(users, targets):
-    target_values = []
-    for user in users:
-        target_values.append(targets[user])
-    return target_values
-
-
-
-
 #########################################################################################################################
 # Changes tokenized words to their corresponding ids in vocabulary
 #
@@ -274,56 +156,6 @@ def word2id(tweets, vocab):
     return user_batch
 
 
-
-#########################################################################################################################
-# Prepares batch data, also adds padding to tweets
-#
-# input: list (tweets)  - List of tweets corresponding to the authors in:
-#	     list (users)   - Owner of the tweets
-#	     dict (targets) - Ground-truth gender vector of each owner
-#	     list (seq_len) - Sequence length for tweets
-#	     int  (iter_no) - Current # of iteration we are on
-#
-# output: list (batch_input)       - Ids of each words to be used in tf_embedding_lookup
-# 	      list (batch_output)      - Target values to be fed to the rnn
-#	      list (batch_sequencelen) - Number of words in each tweet(gives us the # of time unrolls)
-def prepWordBatchData_tweet(tweets, users, targets, seq_len, iter_no):
-    start = iter_no * FLAGS.batch_size
-    end = iter_no * FLAGS.batch_size + FLAGS.batch_size
-
-    if end > len(tweets):
-        end = len(tweets)
-
-    batch_tweets = tweets[start:end]
-    batch_users = users[start:end]
-    batch_sequencelen = seq_len[start:end]
-
-    batch_output_temp = user2target(batch_users, targets)
-
-    # prepare input by adding padding
-    tweet_lengths = [len(tweet) for tweet in batch_tweets]
-    max_tweet_length = max(tweet_lengths)
-
-    batch_input = []
-    for i in range(FLAGS.batch_size):
-        tweet = batch_tweets[i]
-        padded_tweet = []
-        for j in range(max_tweet_length):
-            if len(tweet) > j:
-                padded_tweet.append(tweet[j])
-            else:
-                padded_tweet.append("PAD")
-        batch_input.append(padded_tweet)
-
-
-    c = list(zip(batch_input, batch_output_temp, batch_sequencelen))
-    random.shuffle(c)
-    tweet_batch, targets_batch, seqlens_batch = zip(*c)
-
-    return tweet_batch, targets_batch, seqlens_batch
-
-
-
 #########################################################################################################################
 # Prepares batch data, also adds padding to tweets
 #
@@ -349,7 +181,7 @@ def prepWordBatchData(tweets, users, targets, seq_len, iter_no):
 	batch_users = users[start:end]
 	batch_sequencelen = seq_len[start:end]
 
-	batch_targets = user2target(batch_users, targets)
+	batch_targets = 2#user2target(batch_users, targets)
 
 	# prepare input by adding padding
 	tweet_lengths = [len(tweet) for tweet in batch_tweets]
