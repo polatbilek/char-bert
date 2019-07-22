@@ -3,9 +3,9 @@ class flags(object):
 	def __init__(self):
 
 		#set sizes
-		self.test_set_size = 0.0
-		self.validation_set_size = 0.2
-		self.training_set_size = 0.8
+		self.test_set_size = 0.15
+		self.validation_set_size = 0.1
+		self.training_set_size = 0.75
 
 		#input file paths
 		self.word_embed_path = "/home/darg2/Desktop/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
@@ -24,9 +24,6 @@ class flags(object):
 		self.l_rate = [0.01]
 		self.reg_param = [0.001, 0.0005, 0.0001, 0.00005, 0.00001, 0.000005, 0.000001]
 		self.rnn_cell_sizes = [90, 120, 150]
-		self.cnn_filter_counts = [60, 80, 100]
-
-
 
 
 		#########################################################################################################################
@@ -46,12 +43,8 @@ class flags(object):
 		self.fc_size = 2*self.semantic_rnn_cell_size
 
 
-
-
-
 		##########################################################################################################################
 		# Training parameters
-		self.tweet_per_user = 100
 		self.batch_size = 10
 		self.num_epochs = 18
 		self.evaluate_every = 5

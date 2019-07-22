@@ -18,15 +18,20 @@ from tqdm import tqdm
 def readFastTextEmbeddings(path):
 	fin = io.open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
 
-	data = {}
+	embeddings = {}
 	for line in tqdm(fin):
 		tokens = line.rstrip().split(' ')
-		data[tokens[0]] = np.asarray(list(map(float, tokens[1:])))
+		embeddings[tokens[0]] = np.asarray(list(map(float, tokens[1:])))
 
-	data["<PAD>"] = np.random.randn(FLAGS.embedding_size) #Padding vector
-	data["<UNK>"] = np.random.randn(FLAGS.embedding_size) #Unknown word vector
+	embeddings["<PAD>"] = np.random.randn(FLAGS.embedding_size) #Padding vector
+	embeddings["<UNK>"] = np.random.randn(FLAGS.embedding_size) #Unknown word vector
 
-	return data
+	vocab = {}
+
+	for i in range(len(list(embeddings.keys()))):
+		vocab[list(embeddings.keys())[i]] = i
+
+	return np.array(list(embeddings.values())), vocab
 
 
 
@@ -96,37 +101,6 @@ def readData(path):
 
 
 #########################################################################################################################
-# Prepares test data
-#
-# input: List (tweets)  - List of tweets of a user, each tweet has words as list
-#        List (user)    - List of usernames
-#        dict (target)  - Dictionary for one-hot gender vectors of users
-#
-# output: List (test_input)  - List of tweets which are padded up to max_tweet_length
-#         List (test_output) - List of one-hot gender vector corresponding to tweets in index order
-def prepTestData(tweets, user, target):
-    # prepare output
-    test_output = user2target(user, target)
-
-    # prepare input by adding padding
-    tweet_lengths = [len(tweet) for tweet in tweets]
-    max_tweet_length = max(tweet_lengths)
-
-    test_input = []
-    for i in range(len(tweets)):
-        tweet = tweets[i]
-        padded_tweet = []
-        for j in range(max_tweet_length):
-            if len(tweet) > j:
-                padded_tweet.append(tweet[j])
-            else:
-                padded_tweet.append("PAD")
-        test_input.append(padded_tweet)
-
-    return test_input, test_output
-
-
-#########################################################################################################################
 # Changes tokenized words to their corresponding ids in vocabulary
 #
 # input: list (tweets) - List of tweets
@@ -140,94 +114,89 @@ def word2id(data, vocab):
 		data_as_wordids = []
 
 		for word in data: #loop in words of tweet
-			if word != "PAD":
+			if word != "<PAD>":
 				word = word.lower()
 
 			try:
 				data_as_wordids.append(vocab[word])
 			except:
-				data_as_wordids.append(vocab["UNK"])
+				data_as_wordids.append(vocab["<UNK>"])
 
 		batch.append(data_as_wordids)
 
     return batch
 
 
+
 #########################################################################################################################
-# Prepares batch data, also adds padding to tweets
+# Returns the age, job, gender info of the users of the batch
 #
-# input: list (tweets)  - List of tweets corresponding to the authors in:
-#	     list (users)   - Owner of the tweets
-#	     dict (targets) - Ground-truth gender vector of each owner
-#	     list (seq_len) - Sequence length for tweets
-#	     int  (iter_no) - Current # of iteration we are on
+# input: list (batch_users)   - List of users in the batch
+#        dict (ground_truth)  - Ground truth info of all users
+#
+# output: list (targets)      - List of target values of users in the batch
+def user2target(batch_users, ground_truth):
+	targets = []
+
+	for user in batch_users:
+		targets.append(ground_truth[user])
+
+	return targets
+
+
+#########################################################################################################################
+# Prepares batch data, also adds padding to texts
+#
+# input: list (data)         - List of texts corresponding to the users
+#	     list (users)        - List of users
+#	     dict (ground_truth) - Ground-truth info of each user
+#	     dict (vocabulary)   - Vocabulary with words as key, id as value
+#	     int  (iter_no)      - Current # of iteration we are on
 #
 # output: list (batch_input)       - Ids of each words to be used in tf_embedding_lookup
-# 	      list (batch_output)      - Target values to be fed to the rnn
-#	      list (batch_sequencelen) - Number of words in each tweet(gives us the # of time unrolls)
-def prepWordBatchData(tweets, users, targets, seq_len, iter_no):
-	numof_total_tweet = FLAGS.batch_size * FLAGS.tweet_per_user
+# 	      list (batch_targets)     - Target values to be fed to the rnn
+#	      list (batch_seqlen)      - Number of words in each tweet(gives us the # of time unrolls)
+def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 
-	start = iter_no * numof_total_tweet
-	end = iter_no * numof_total_tweet + numof_total_tweet
+	start = iter_no * FLAGS.batch_size
+	end = iter_no * FLAGS.batch_size + FLAGS.batch_size
 
-	if end > len(tweets):
-		end = len(tweets)
+	if end > len(data):
+		end = len(data)
 
-	batch_tweets = tweets[start:end]
+	batch_data = data[start:end]
 	batch_users = users[start:end]
-	batch_sequencelen = seq_len[start:end]
+	batch_seqlen = [d[0] for d in batch_data]
 
-	batch_targets = 2#user2target(batch_users, targets)
+	batch_targets = user2target(batch_users, ground_truth)
 
 	# prepare input by adding padding
-	tweet_lengths = [len(tweet) for tweet in batch_tweets]
-	max_tweet_length = max(tweet_lengths)
+	max_text_length = max(batch_seqlen)
 
 	batch_input = []
-	for i in range(numof_total_tweet):
-		tweet = batch_tweets[i]
-		padded_tweet = []
-		for j in range(max_tweet_length):
-			if len(tweet) > j:
-				padded_tweet.append(tweet[j])
+	for text in batch_data:
+
+		padded_text = []
+		for j in range(max_text_length):
+			if len(text[2]) > j:
+				padded_text.append(text[2][j])
 			else:
-				padded_tweet.append("PAD")
-		batch_input.append(padded_tweet)
+				padded_text.append("<PAD>")
+		batch_input.append(padded_text)
 
 
-	#reshape the input for shuffling operation
-	tweet_batches = np.reshape(np.asarray(batch_input), (FLAGS.batch_size, FLAGS.tweet_per_user, max_tweet_length)).tolist()
-	target_batches = np.reshape(np.asarray(batch_targets), (FLAGS.batch_size, FLAGS.tweet_per_user, 2)).tolist()
-	seqlen_batches = np.reshape(np.asarray(batch_sequencelen), (FLAGS.batch_size, FLAGS.tweet_per_user)).tolist()
+	batch_input = word2id(batch_input, vocabulary)
 
-	#prepare the target values
-	target_values = []
-	for i in range(len(target_batches)):
-		target_values.append(target_batches[i][0]) 
-	target_batches = np.reshape(np.asarray(target_values), (FLAGS.batch_size, 2)).tolist()
-
-	'''
 	#user level shuffling
-	c = list(zip(tweet_batches, target_batches, seqlen_batches))
+	c = list(zip(batch_input, batch_targets, batch_seqlen))
 	random.shuffle(c)
-	tweet_batches, target_batches, seqlen_batches = zip(*c)
-	'''
+	batch_input, batch_targets, batch_seqlen = zip(*c)
 
-	tweet_batches = list(tweet_batches)
-	target_values = list(target_values)
-	seqlen_batches = list(seqlen_batches)
+	targets_age = [t[0] for t in batch_targets]
+	targets_job = [t[1] for t in batch_targets]
+	targets_gender = [t[2] for t in batch_targets]
 
-	#tweet level shuffling
-	for i in range(FLAGS.batch_size):
-		c = list(zip(tweet_batches[i], seqlen_batches[i]))
-		random.shuffle(c)
-		tweet_batches[i], seqlen_batches[i] = zip(*c)
-
-	tweet_batches = list(tweet_batches)
-	seqlen_batches = list(seqlen_batches)
-
-	return tweet_batches, target_batches, seqlen_batches
+	return batch_input, targets_age, targets_job, targets_gender, batch_seqlen
 
 
 
@@ -235,33 +204,38 @@ def prepWordBatchData(tweets, users, targets, seq_len, iter_no):
 #########################################################################################################################
 # partites the data into 3 part training, validation, test
 #
-# input: list (tweets)  - List of tweets corresponding to the authors in:
-#	     list (users)   - Owner of the tweets
-#	     list (seq_len) - Sequence length for tweets
+# input: list (data)           - List of data and info about data (e.g. [seqlen, userid, text])
+#	     dict (ground_truth)   - Ground truth info of authors (key=userid, value=[age, job, gender])
 #
-# output: output_format : usagetype_datatype
-#         list ("usagetype"_tweets)       - Group of tweets partitioned according to the FLAGS."usagetype"_set_size
-# 	      list ("usagetype"_users)        - Group of users partitioned according to the FLAGS."usagetype"_set_size
-#	      list ("usagetype"_seqlengths)   - Group of seqlengths partitioned according to the FLAGS."usagetype"_set_size
-def partite_dataset(tweets, users, seq_lengths):
+# output: output_format (list) : "*_data" same format but the "*_users" are just userid.
+# 						         To get user info, you need to query ground-truth dictionary like gt['11213'].
+def partite_dataset(data, ground_truth):
 
-    training_set_size = int(len(tweets) * FLAGS.training_set_size)
-    valid_set_size = int(len(tweets) * FLAGS.validation_set_size) + training_set_size
+	training_set_size = int(len(data) * FLAGS.training_set_size)
+	valid_set_size = int(len(data) * FLAGS.validation_set_size) + training_set_size
 
-    training_tweets = tweets[:training_set_size]
-    valid_tweets = tweets[training_set_size:valid_set_size]
-    test_tweets = tweets[valid_set_size:]
+	training_data = []
+	valid_data = []
+	test_data = []
 
-    training_users = users[:training_set_size]
-    valid_users = users[training_set_size:valid_set_size]
-    test_users = users[valid_set_size:]
+	users = list(ground_truth.keys())
+	training_users = users[:training_set_size]
+	valid_users = users[training_set_size:valid_set_size]
+	test_users = users[valid_set_size:]
 
-    training_seq_lengths = seq_lengths[:training_set_size]
-    valid_seq_lengths = seq_lengths[training_set_size:valid_set_size]
-    test_seq_lengths = seq_lengths[valid_set_size:]
+	for post in data:
+		if post[1] in training_users:
+			training_data.append(post)
 
-    print("\ttraining set size=" + str(len(training_tweets)) + " validation set size=" + str(len(valid_tweets)) + " test set size=" + str(len(test_tweets)))
+		elif post[1] in valid_users:
+			valid_data.append(post)
 
-    return training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths, test_tweets, test_users, test_seq_lengths
+		elif post[1] in test_users:
+			test_data.append(post)
+
+
+	print("Training set size=" + str(len(training_data)) + " Validation set size=" + str(len(valid_data)) + " Test set size=" + str(len(test_data)))
+
+	return training_data, training_users, valid_data, valid_users, test_data, test_users
 
 

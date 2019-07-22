@@ -1,12 +1,6 @@
 
-import tensorflow as tf
-import os
-from parameters import FLAGS
-from preprocess import *
-from model import network
 from train import *
-from eval import *
-import time
+from test import *
 import sys
 
 ##combines the train and eval into a single script
@@ -15,19 +9,14 @@ if __name__ == "__main__":
 	print("---PREPROCESSING STARTED---")
 
 	print("\treading word embeddings...")
-	old = time.time()
-	embeddings = readFastTextEmbeddings(FLAGS.word_embed_path)
-	print("reading embeddings took " + str(time.time() - old) + " sec")
+	embeddings, vocabulary = readFastTextEmbeddings(FLAGS.word_embed_path)
 
 	print("\treading tweets...")
-	old = time.time()
-	ground_truth = readData(FLAGS.data_path)
-	print("reading data took "+ str(time.time()-old) + " sec")
+	ground_truth, data = readData(FLAGS.data_path)
 
-	sys.exit()
 	print("\tconstructing datasets and network...")
-	training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths, test_tweets, test_users, test_seq_lengths = partite_dataset(
-		tweets, users, seq_lengths)
+	training_data, training_gt, valid_data, valid_users, test_data, test_users = partite_dataset(ground_truth, data)
+
 
 	# hyperparameter optimization if it is set
 	if FLAGS.optimize == False:
@@ -36,14 +25,13 @@ if __name__ == "__main__":
 		model_specs = "with parameters: Learning Rate:" + str(
 			FLAGS.learning_rate) + ", Regularization parameter:" + str(FLAGS.l2_reg_lambda) + ", cell size:"
 		model_specs += str(FLAGS.rnn_cell_size) + ", embedding size:" + str(
-			FLAGS.word_embedding_size) + ", language:" + FLAGS.lang
+			FLAGS.word_embedding_size)
 		print(model_specs)
 
 		# run the network
 		tf.reset_default_graph()
 		net = network(embeddings)
-		train(net, training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths,
-			  target_values, vocabulary, embeddings)
+		train(net, training_data, training_gt, valid_data, valid_users, vocabulary, embeddings, ground_truth)
 
 	else:
 		for rnn_cell_size in FLAGS.rnn_cell_sizes:
@@ -72,8 +60,7 @@ if __name__ == "__main__":
 					f.close()
 
 					# start training
-					train(net, training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users,
-						  valid_seq_lengths, target_values, vocabulary, embeddings)
+					train(net, training_data, training_gt, valid_data, valid_users, vocabulary, embeddings, ground_truth)
 
 	print("---TESTING STARTED---")
 	print("\treading tweets for test...")

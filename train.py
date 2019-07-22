@@ -1,19 +1,14 @@
 
-from parameters import FLAGS
 import tensorflow as tf
 from preprocess import *
-import numpy as np
-from model import network
 import sys
 
 
 ###########################################################################################################################
 ##trains and validates the model
 ###########################################################################################################################
-def train(network, training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths,
-		  target_values, vocabulary, embeddings):
+def train(network, training_data, training_users, valid_data, valid_users, vocabulary, embeddings, ground_truth):
 	saver = tf.train.Saver(max_to_keep=None)
-	weights = []
 
 	with tf.device('/device:GPU:0'):
 		with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
@@ -29,95 +24,181 @@ def train(network, training_tweets, training_users, training_seq_lengths, valid_
 				saver.restore(sess, load_as)
 				print("Loading the pretrained model from: " + str(load_as))
 
-			# for each epoch
+			# For each epoch
 			for epoch in range(FLAGS.num_epochs):
 				epoch_loss = 0.0
-				epoch_accuracy = 0.0
-				num_batches = 0.0
-				batch_accuracy = 0.0
+				epoch_loss_age = 0.0
+				epoch_loss_job = 0.0
+				epoch_loss_gender = 0.0
+				epoch_accuracy_age = 0.0
+				epoch_accuracy_job = 0.0
+				epoch_accuracy_gender = 0.0
+
+				training_batch_count = int(len(training_data) / FLAGS.batch_size)
+				valid_batch_count = int(len(valid_data) / FLAGS.batch_size)
+
+				batch_accuracy_age = 0.0
+				batch_accuracy_job = 0.0
+				batch_accuracy_gender = 0.0
 				batch_loss = 0.0
-				training_batch_count = int(len(training_tweets) / (FLAGS.batch_size * FLAGS.tweet_per_user))
-				valid_batch_count = int(len(valid_tweets) / (FLAGS.batch_size * FLAGS.tweet_per_user))
+				batch_loss_age = 0.0
+				batch_loss_job = 0.0
+				batch_loss_gender = 0.0
 
 				# TRAINING
 				for batch in range(training_batch_count):
-					# prepare the batch
-					training_batch_x, training_batch_y, training_batch_seqlen = prepWordBatchData(training_tweets,
-																								  training_users,
-																								  target_values,
-																								  training_seq_lengths,
-																								  batch)
-					training_batch_x = word2id(training_batch_x, vocabulary)
+					# Prepare the batch
+					training_batch_x, \
+					training_batch_y_age, \
+					training_batch_y_job, \
+					training_batch_y_gender, \
+					training_batch_seqlen = prepWordBatchData(training_data,
+																training_users,
+																ground_truth,
+																vocabulary,
+																batch)
 
-					# Flatten everything to feed RNN
-					training_batch_x = np.reshape(training_batch_x, (
-					FLAGS.batch_size * FLAGS.tweet_per_user, np.shape(training_batch_x)[2]))
-					training_batch_seqlen = np.reshape(training_batch_seqlen, (-1))
-
-					# run the graph
-					feed_dict = {network.X: training_batch_x, network.Y: training_batch_y,
-								 network.sequence_length: training_batch_seqlen, network.reg_param: FLAGS.l2_reg_lambda}
-
-
-
-					_, loss, prediction, accuracy, fw_weights = sess.run(
-						[network.train, network.loss, network.prediction, network.accuracy, tf.trainable_variables("tweet/fw/forward-cells/gates/kernel:0")], feed_dict=feed_dict)
+					# Prepare feed values
+					feed_dict = {network.X: training_batch_x,
+								 network.Y_age: training_batch_y_age,
+								 network.Y_job: training_batch_y_job,
+								 network.Y_gender: training_batch_y_gender,
+								 network.sequence_length: training_batch_seqlen,
+								 network.reg_param: FLAGS.l2_reg_lambda}
 
 
-					weights.append(fw_weights[0][0])
+					# Run the computational graph
+					_, loss_age, loss_job, loss_gender, loss, \
+					prediction_age, prediction_job, prediction_gender, \
+					accuracy_age, accuracy_job, accuracy_gender = sess.run(
+						[network.train, network.loss_age, network.loss_job, network.loss_gender, network.loss,
+						 network.prediction_age, network.prediction_job, network.prediction_gender,
+						 network.accuracy_age, network.accuracy_job, network.accuracy_gender], feed_dict=feed_dict)
 
-					# calculate the metrics
+					# Calculate the metrics
 					batch_loss += loss
 					epoch_loss += loss
-					batch_accuracy += accuracy
-					epoch_accuracy += accuracy
-					num_batches += 1
+
+					batch_loss_age += loss_age
+					epoch_loss_age += loss_age
+
+					batch_loss_job += loss_job
+					epoch_loss_job += loss_job
+
+					batch_loss_gender += loss_gender
+					epoch_loss_gender += loss_gender
+
+					batch_accuracy_age += accuracy_age
+					epoch_accuracy_age += accuracy_age
+
+					batch_accuracy_job += accuracy_job
+					epoch_accuracy_job += accuracy_job
+
+					batch_accuracy_gender += accuracy_gender
+					epoch_accuracy_gender += accuracy_gender
 
 					# print the accuracy and progress of the training
 					if batch % FLAGS.evaluate_every == 0 and batch != 0:
-						batch_accuracy /= num_batches
-						print("Epoch " + "{:2d}".format(epoch) + " , Batch " + "{0:5d}".format(batch) + "/" + str(
-							training_batch_count) + " , loss= " + "{0:5.4f}".format(batch_loss) +
-							  " , accuracy= " + "{0:0.5f}".format(batch_accuracy) + " , progress= " + "{0:2.2f}".format(
-							(float(batch) / training_batch_count) * 100) + "%")
+						batch_accuracy_age /= FLAGS.evaluate_every
+						batch_accuracy_job /= FLAGS.evaluate_every
+						batch_accuracy_gender /= FLAGS.evaluate_every
+
+						print("Epoch " + "{:2d}".format(epoch) +
+							  " , Batch " + "{0:5d}".format(batch) + "/" + str(training_batch_count) +
+							  " , Loss= " + "{0:5.4f}".format(batch_loss) +
+							  " , Age accuracy= " + "{0:0.5f}".format(batch_accuracy_age) +
+							  " , Job accuracy= " + "{0:0.5f}".format(batch_accuracy_job) +
+							  " , Gender accuracy= " + "{0:0.5f}".format(batch_accuracy_gender) +
+							  " , Progress= " + "{0:2.2f}".format((float(batch) / training_batch_count) * 100) + "%")
+
 						batch_loss = 0.0
-						batch_accuracy = 0.0
-						num_batches = 0.0
+						batch_loss_age = 0.0
+						batch_loss_job = 0.0
+						batch_loss_gender = 0.0
+						batch_accuracy_job = 0.0
+						batch_accuracy_age = 0.0
+						batch_accuracy_gender = 0.0
 
 				# VALIDATION
-				batch_accuracy = 0.0
+				batch_accuracy_age = 0.0
+				batch_accuracy_job = 0.0
+				batch_accuracy_gender = 0.0
 				batch_loss = 0.0
+				batch_loss_age = 0.0
+				batch_loss_job = 0.0
+				batch_loss_gender = 0.0
 
 				for batch in range(valid_batch_count):
 					# prepare the batch
-					valid_batch_x, valid_batch_y, valid_batch_seqlen = prepWordBatchData(valid_tweets, valid_users,
-																						 target_values,
-																						 valid_seq_lengths, batch)
-					valid_batch_x = word2id(valid_batch_x, vocabulary)
+					valid_batch_x, \
+					valid_batch_y_age, \
+					valid_batch_y_job, \
+					valid_batch_y_gender, \
+					valid_batch_seqlen = prepWordBatchData(valid_data,
+															valid_users,
+															ground_truth,
+															vocabulary,
+															batch)
 
-					# Flatten everything to feed RNN
-					valid_batch_x = np.reshape(valid_batch_x,
-											   (FLAGS.batch_size * FLAGS.tweet_per_user, np.shape(valid_batch_x)[2]))
-					valid_batch_seqlen = np.reshape(valid_batch_seqlen, (-1))  # to flatten list, pass [-1] as shape
 
-					# run the graph
-					feed_dict = {network.X: valid_batch_x, network.Y: valid_batch_y,
-								 network.sequence_length: valid_batch_seqlen, network.reg_param: FLAGS.l2_reg_lambda}
-					loss, prediction, accuracy = sess.run([network.loss, network.prediction, network.accuracy],
-														  feed_dict=feed_dict)
+					# Prepare feed values
+					feed_dict = {network.X: valid_batch_x,
+								 network.Y_age: valid_batch_y_age,
+								 network.Y_job: valid_batch_y_job,
+								 network.Y_gender: valid_batch_y_gender,
+								 network.sequence_length: valid_batch_seqlen,
+								 network.reg_param: FLAGS.l2_reg_lambda}
 
-					# calculate the metrics
+					# Run the computational graph
+					_, loss_age, loss_job, loss_gender, loss, \
+					prediction_age, prediction_job, prediction_gender, \
+					accuracy_age, accuracy_job, accuracy_gender = sess.run(
+						[network.train, network.loss_age, network.loss_job, network.loss_gender, network.loss,
+						 network.prediction_age, network.prediction_job, network.prediction_gender,
+						 network.accuracy_age, network.accuracy_job, network.accuracy_gender], feed_dict=feed_dict)
+
+					# Calculate the metrics
 					batch_loss += loss
-					batch_accuracy += accuracy
+					epoch_loss += loss
+
+					batch_loss_age += loss_age
+					epoch_loss_age += loss_age
+
+					batch_loss_job += loss_job
+					epoch_loss_job += loss_job
+
+					batch_loss_gender += loss_gender
+					epoch_loss_gender += loss_gender
+
+					batch_accuracy_age += accuracy_age
+					epoch_accuracy_age += accuracy_age
+
+					batch_accuracy_job += accuracy_job
+					epoch_accuracy_job += accuracy_job
+
+					batch_accuracy_gender += accuracy_gender
+					epoch_accuracy_gender += accuracy_gender
+
 
 				# print the accuracy and progress of the validation
-				batch_accuracy /= valid_batch_count
-				epoch_accuracy /= training_batch_count
-				print("Epoch " + str(epoch) + " training loss: " + "{0:5.4f}".format(epoch_loss))
-				print("Epoch " + str(epoch) + " training accuracy: " + "{0:0.5f}".format(epoch_accuracy))
-				print("Epoch " + str(epoch) + " validation loss: " + "{0:5.4f}".format(batch_loss))
-				print("Epoch " + str(epoch) + " validation accuracy: " + "{0:0.5f}".format(batch_accuracy))
+				batch_accuracy_age /= valid_batch_count
+				batch_accuracy_job /= valid_batch_count
+				batch_accuracy_gender /= valid_batch_count
 
+				epoch_accuracy_age /= training_batch_count
+				epoch_accuracy_job /= training_batch_count
+				epoch_accuracy_gender /= training_batch_count
+
+				print("Epoch " + str(epoch) + " Training loss: " + "{0:5.4f}".format(epoch_loss))
+				print("Epoch " + str(epoch) + " Training age accuracy: " + "{0:0.5f}".format(epoch_accuracy_age))
+				print("Epoch " + str(epoch) + " Training job accuracy: " + "{0:0.5f}".format(epoch_accuracy_job))
+				print("Epoch " + str(epoch) + " Training gender accuracy: " + "{0:0.5f}".format(epoch_accuracy_gender))
+				print("Epoch " + str(epoch) + " Validation loss: " + "{0:5.4f}".format(batch_loss))
+				print("Epoch " + str(epoch) + " Validation age accuracy: " + "{0:0.5f}".format(batch_accuracy_age))
+				print("Epoch " + str(epoch) + " Validation job accuracy: " + "{0:0.5f}".format(batch_accuracy_job))
+				print("Epoch " + str(epoch) + " Validation gender accuracy: " + "{0:0.5f}".format(batch_accuracy_gender))
+
+				'''
 				if FLAGS.optimize:
 					f = open(FLAGS.log_path, "a")
 
@@ -142,73 +223,4 @@ def train(network, training_tweets, training_users, training_seq_lengths, valid_
 					save_as = os.path.join(FLAGS.model_path, model_name)
 					save_path = saver.save(sess, save_as)
 					print("Model saved in path: %s" % save_path)
-
-		weights = np.asarray(weights)
-		np.save("/home/darg2/Desktop/aaa.npy", weights)
-
-####################################################################################################################
-# main function for standalone runs
-####################################################################################################################
-if __name__ == "__main__":
-
-	print("---PREPROCESSING STARTED---")
-
-	print("\treading word embeddings...")
-	vocabulary, embeddings = readGloveEmbeddings(FLAGS.word_embed_path, FLAGS.word_embedding_size)
-
-	print("\treading tweets...")
-	tweets, users, target_values, seq_lengths = readData(FLAGS.training_data_path)
-
-	print("\tconstructing datasets and network...")
-	training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths, test_tweets, test_users, test_seq_lengths = partite_dataset(
-		tweets, users, seq_lengths)
-
-	# single run on training data
-	if FLAGS.optimize == False:
-
-		# print specs
-		print("---TRAINING STARTED---")
-		model_specs = "with parameters: Learning Rate:" + str(
-			FLAGS.learning_rate) + ", Regularization parameter:" + str(FLAGS.l2_reg_lambda)
-		model_specs += ", cell size:" + str(FLAGS.rnn_cell_size) + ", embedding size:" + str(
-			FLAGS.word_embedding_size) + ", language:" + FLAGS.lang
-		print(model_specs)
-
-		# run the network
-		tf.reset_default_graph()
-		net = network(embeddings)
-		train(net, training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users, valid_seq_lengths,
-			  target_values, vocabulary, embeddings)
-
-	# hyperparameter optimization
-	else:
-		for rnn_cell_size in FLAGS.rnn_cell_sizes:
-			for learning_rate in FLAGS.l_rate:
-				for regularization_param in FLAGS.reg_param:
-
-					# prep the network
-					tf.reset_default_graph()
-					FLAGS.learning_rate = learning_rate
-					FLAGS.l2_reg_lambda = regularization_param
-					FLAGS.rnn_cell_size = rnn_cell_size
-					net = network(embeddings)
-
-					# print specs
-					print("---TRAINING STARTED---")
-					model_specs = "with parameters: Learning Rate:" + str(
-						FLAGS.learning_rate) + ", Regularization parameter:" + str(FLAGS.l2_reg_lambda)
-					model_specs += ", cell size:" + str(FLAGS.rnn_cell_size) + ", embedding size:" + str(
-						FLAGS.word_embedding_size) + ", language:" + FLAGS.lang
-					print(model_specs)
-
-					# take the logs
-					if FLAGS.optimize:
-						f = open(FLAGS.log_path, "a")
-						f.write("---TRAINING STARTED---\n")
-						model_specs += "\n"
-						f.write(model_specs)
-						f.close()
-
-					# start training
-					train(net, training_tweets, training_users, training_seq_lengths, valid_tweets, valid_users,
-						  valid_seq_lengths, target_values, vocabulary, embeddings)
+				'''

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from parameters import FLAGS
 import numpy as np
-
+import sys
 
 class network(object):
 
