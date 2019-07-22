@@ -19,10 +19,13 @@ def readFastTextEmbeddings(path):
 	fin = io.open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
 
 	data = {}
-	i = 0
-	for line in fin:
+	for line in tqdm(fin):
 		tokens = line.rstrip().split(' ')
 		data[tokens[0]] = np.asarray(list(map(float, tokens[1:])))
+
+	data["<PAD>"] = np.random.randn(FLAGS.embedding_size) #Padding vector
+	data["<UNK>"] = np.random.randn(FLAGS.embedding_size) #Unknown word vector
+
 	return data
 
 
@@ -48,17 +51,18 @@ def readData(path):
 	ground_truth = {}
 	jobs = {}
 	data = []
-	count = 0
 
 	for user in tqdm(os.listdir(path)):
 		infos = user.split(".")
 		features = []
 
+		# preparing age info of author
 		one_hot_age = np.zeros(8)
 		one_hot_age[int((int(infos[2])-10)/5)] = 1
 
 		features.append(one_hot_age)
 
+		# preparing job info of author
 		if infos[3] not in jobs:
 			jobs[infos[3]] = job_index
 			job_index += 1
@@ -68,28 +72,25 @@ def readData(path):
 
 		features.append(one_hot_job)
 
+		# preparing gender info of author
 		if infos[1] == "male":
 			features.append([1, 0])
 		else:
 			features.append([0, 1])
 
 
-		ground_truth[infos[0]] = features
+		ground_truth[infos[0]] = features # saving the author info to ground truth dict
 
-		xml_file_name = os.path.join(path,user)
+		xml_file_name = os.path.join(path, user)
 		xmlFile = open(xml_file_name, "r", encoding="utf8")
 
-
+		# Here we read the xml files, however there are 670 corrupted files, we just ignore them and don't read.
 		try:
 			for post in xmlParser.parse(xmlFile).findall("post"):
 				words = tokenizer.tokenize(post.text)
 				data.append([len(words), infos[0], words])
 		except:
-			print(infos)
-			print(xmlParser.parse(xmlFile).findall("post"))
-
-	print("total fail: ")
-	print(count)
+			pass
 
 	return ground_truth, data
 
@@ -132,28 +133,24 @@ def prepTestData(tweets, user, target):
 #        dict (vocab)  - Dictionary of the vocabulary of GloVe
 #
 # output: list (batch_tweet_ids) - List of corresponding ids of words in the tweet w.r.t. vocabulary
-def word2id(tweets, vocab):
-    user_batch = []
+def word2id(data, vocab):
+    batch = []
 
     for i in range(FLAGS.batch_size): #loop of users
-        batch_tweet_ids = []
+		data_as_wordids = []
 
-        for tweet in tweets[i]: #loop of tweets
-            tweet_ids = []
-            for word in tweet: #loop in words of tweet
-                if word != "PAD":
-                    word = word.lower()
+		for word in data: #loop in words of tweet
+			if word != "PAD":
+				word = word.lower()
 
-                try:
-                    tweet_ids.append(vocab[word])
-                except:
-                    tweet_ids.append(vocab["UNK"])
+			try:
+				data_as_wordids.append(vocab[word])
+			except:
+				data_as_wordids.append(vocab["UNK"])
 
-            batch_tweet_ids.append(tweet_ids)
+		batch.append(data_as_wordids)
 
-        user_batch.append(batch_tweet_ids)
-
-    return user_batch
+    return batch
 
 
 #########################################################################################################################

@@ -8,72 +8,105 @@ class network(object):
 	############################################################################################################################
 	def __init__(self, embeddings):
 		self.prediction = []
+		self.cells = []
 
 		# create word embeddings
 		self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[embeddings.shape[0], embeddings.shape[1]]), trainable=False, name="tf_embeddings")
 		self.embedding_placeholder = tf.placeholder(tf.float32, [embeddings.shape[0], embeddings.shape[1]])
-		self.embedding_init = self.tf_embeddings.assign(
-			self.embedding_placeholder)  # initialize this once  with sess.run when the session begins
-
-		# create GRU cells
-		with tf.variable_scope("tweet"):
-			self.cell_fw = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.rnn_cell_size, activation=tf.sigmoid, name="forward-cells")
-			self.cell_bw = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.rnn_cell_size, activation=tf.sigmoid)
+		# initialize this once  with sess.run when the session begins
+		self.embedding_init = self.tf_embeddings.assign(self.embedding_placeholder)
 
 		# RNN placeholders
-		self.X = tf.placeholder(tf.int32, [FLAGS.batch_size * FLAGS.tweet_per_user, None])
-		self.Y = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.num_classes])
+		self.X = tf.placeholder(tf.int32, [FLAGS.batch_size, None])
+
+		self.Y_age = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_age_classes])
+		self.Y_gender = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_gender_classes])
+		self.Y_job = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_job_classes])
+
 		self.sequence_length = tf.placeholder(tf.int32, [FLAGS.batch_size * FLAGS.tweet_per_user])
 		self.reg_param = tf.placeholder(tf.float32, shape=[])
 
-		# weigths
-		self.weights = {
-			'fc1': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size, FLAGS.num_classes]), name="fc1-weights"),
-			'att1-w': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size, 2 * FLAGS.rnn_cell_size]),
-								  name="att1-weights"),
-			'att1-v': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size]), name="att1-vector"),
-			'att2-w': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size, 2 * FLAGS.rnn_cell_size]),
-								  name="att2-weights"),
-			'att2-v': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size]), name="att2-vector")}
-		# biases
-		self.bias = {'fc1': tf.Variable(tf.random_normal([FLAGS.num_classes]), name="fc1-bias-noreg"),
-					 'att1-w': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size]), name="att1-bias-noreg"),
-					 'att2-w': tf.Variable(tf.random_normal([2 * FLAGS.rnn_cell_size]), name="att2-bias-noreg")}
+
+		# create GRU cells
+		with tf.variable_scope("cells"):
+			self.cells['global-fw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.global_rnn_cell_size, activation=tf.sigmoid,
+												  name="forward-cells-global")
+			self.cells['global-bw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.global_rnn_cell_size, activation=tf.sigmoid,
+												  name="backword-cells-global")
+
+			self.cells['age-fw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="forward-cells-age")
+			self.cells['age-bw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="backword-cells-age")
+
+			self.cells['job-fw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="forward-cells-job")
+			self.cells['job-bw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="backword-cells-job")
+
+			self.cells['gender-fw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="forward-cells-gender")
+			self.cells['gender-bw'] = tf.nn.rnn_cell.GRUCell(num_units=FLAGS.semantic_rnn_cell_size, activation=tf.sigmoid,
+												  name="backword-cells-gender")
+
+
+		with tf.variable_scope("fully_connecteds"):
+			# weigths
+			self.weights = {
+				'fc_age': tf.Variable(tf.random_normal([2 * FLAGS.semantic_rnn_cell_size, FLAGS.numof_age_classes]),
+									  name="fc-age-weights"),
+				'fc_job': tf.Variable(tf.random_normal([2 * FLAGS.semantic_rnn_cell_size, FLAGS.numof_job_classes]),
+									  name="fc-job-weights"),
+				'fc_gender': tf.Variable(tf.random_normal([2 * FLAGS.semantic_rnn_cell_size, FLAGS.numof_gender_classes]),
+										name="fc-gender-weights")}
+			# biases
+			self.bias = {'fc_age': tf.Variable(tf.random_normal([FLAGS.numof_age_classes]), name="fc-age-bias-noreg"),
+						 'fc_job': tf.Variable(tf.random_normal([FLAGS.numof_job_classes]), name="fc-job-bias-noreg"),
+						 'fc_gender': tf.Variable(tf.random_normal([FLAGS.numof_gender_classes]), name="fc-gender-bias-noreg")}
+
 
 		# initialize the computation graph for the neural network
-		# self.rnn()
-		self.rnn_with_attention()
+		self.rnn()
 		self.architecture()
 		self.backward_pass()
 
 
+
 	############################################################################################################################
 	def architecture(self):
-		# user level attention
-		self.att_context_vector_word = tf.tanh(
-			tf.tensordot(self.attention_output, self.weights["att2-w"], axes=1) + self.bias["att2-w"])
-		self.attentions_word = tf.nn.softmax(
-			tf.tensordot(self.att_context_vector_word, self.weights["att2-v"], axes=1))
-		self.attention_output_word = tf.reduce_sum(self.attention_output * tf.expand_dims(self.attentions_word, -1),
-												   1)
 
 		# FC layer for reducing the dimension to 2(# of classes)
-		self.logits = tf.tensordot(self.attention_output_word, self.weights["fc1"], axes=1) + self.bias["fc1"]
+		self.logits_age    = tf.tensordot(self.rnn_output_age, self.weights["fc_age"], axes=1) + self.bias["fc_age"]
+		self.logits_job    = tf.tensordot(self.rnn_output_job, self.weights["fc_job"], axes=1) + self.bias["fc_job"]
+		self.logits_gender = tf.tensordot(self.rnn_output_gender, self.weights["fc_gender"], axes=1) + self.bias["fc_gender"]
 
 		# predictions
-		self.prediction = tf.nn.softmax(self.logits)
+		self.prediction_age = tf.nn.softmax(self.logits_age)
+		self.prediction_job = tf.nn.softmax(self.logits_job)
+		self.prediction_gender = tf.nn.softmax(self.logits_gender)
 
-		# calculate accuracy
-		self.correct_pred = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.Y, 1))
-		self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+		# calculate accuracies
+		self.correct_pred = tf.equal(tf.argmax(self.prediction_age, 1), tf.argmax(self.Y_age, 1))
+		self.accuracy_age = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
 
-		return self.prediction
+		self.correct_pred = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.Y_job, 1))
+		self.accuracy_job = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+
+		self.correct_pred = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.Y_gender, 1))
+		self.accuracy_gender = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+
+		return self.prediction_age, self.prediction_job, self.prediction_gender
+
 
 
 	############################################################################################################################
 	def backward_pass(self):
 		# calculate loss
-		self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.Y))
+		self.loss_age = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits_age, labels=self.Y_age))
+		self.loss_job = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits_job, labels=self.Y_job))
+		self.loss_gender = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits_gender, labels=self.Y_gender))
+
+		self.loss = self.loss_age + self.loss_job + self.loss_gender # total loss is sum of 3 tasks' loss
 
 		# add L2 regularization
 		self.l2 = self.reg_param * sum(
@@ -90,96 +123,60 @@ class network(object):
 		return self.accuracy, self.loss, self.train
 
 
+
 	############################################################################################################################
 	def rnn(self):
 		# embedding layer
 		self.rnn_input = tf.nn.embedding_lookup(self.tf_embeddings, self.X)
 
-		# rnn layer
-		(self.outputs, self.output_states) = tf.nn.bidirectional_dynamic_rnn(self.cell_fw, self.cell_bw, self.rnn_input,
+		# global rnn layer
+		(self.outputs, self.output_states) = tf.nn.bidirectional_dynamic_rnn(self.cells["global-fw"],
+																			 self.cells["global-bw"],
+																			 self.rnn_input,
 																			 self.sequence_length, dtype=tf.float32,
-																			 scope="tweet")
+																			 scope="global-rnn")
 
-		# concatenate the backward and forward cells
-		self.rnn_output_raw = tf.concat([self.output_states[0], self.output_states[1]], 1)
+		# concatenate the backward and forward cells of global to feed them into higher layer
+		self.global_rnn_output = tf.concat([self.outputs[0], self.outputs[1]], 1)
+
+		# age rnn layer
+		(self.outputs_age, self.output_states_age) = tf.nn.bidirectional_dynamic_rnn(self.cells["age-fw"],
+																			 self.cells["age-bw"],
+																			 self.global_rnn_output,
+																			 FLAGS.global_rnn_cell_size , dtype=tf.float32,
+																			 scope="age-rnn")
+
+
+		# job rnn layer
+		(self.outputs_job, self.output_states_job) = tf.nn.bidirectional_dynamic_rnn(self.cells["job-fw"],
+																			 self.cells["job-bw"],
+																			 self.global_rnn_output,
+																			 FLAGS.global_rnn_cell_size, dtype=tf.float32,
+																			 scope="job-rnn")
+
+
+		# gender rnn layer
+		(self.outputs_gender, self.output_states_gender) = tf.nn.bidirectional_dynamic_rnn(self.cells["gender-fw"],
+																			 self.cells["gender-bw"],
+																			 self.global_rnn_output,
+																			 FLAGS.global_rnn_cell_size, dtype=tf.float32,
+																			 scope="gender-rnn")
+
+		# concatenate the backward and forward cells of semantic layers
+		self.rnn_output_age = tf.concat([self.output_states_age[0], self.output_states_age[1]], 1)
+		self.rnn_output_job = tf.concat([self.output_states_job[0], self.output_states_job[1]], 1)
+		self.rnn_output_gender = tf.concat([self.output_states_gender[0], self.output_states_gender[1]], 1)
+
 
 		# reshape the output for the next layers
-		self.rnn_output = tf.reshape(self.rnn_output_raw,
-									 [FLAGS.batch_size, FLAGS.tweet_per_user, 2 * FLAGS.rnn_cell_size])
+		self.rnn_output_age = tf.reshape(self.rnn_output_age,
+									 [FLAGS.batch_size, 2 * FLAGS.semantic_rnn_cell_size])
 
-		return self.rnn_output
+		self.rnn_output_job = tf.reshape(self.rnn_output_job,
+									 [FLAGS.batch_size, 2 * FLAGS.semantic_rnn_cell_size])
 
-
-	############################################################################################################################
-	def rnn_with_attention(self):
-		# embedding layer
-		self.rnn_input = tf.nn.embedding_lookup(self.tf_embeddings, self.X)
-
-		# rnn layer
-		(self.outputs, self.output_states) = tf.nn.bidirectional_dynamic_rnn(self.cell_fw, self.cell_bw,
-																			 self.rnn_input, self.sequence_length,
-																			 dtype=tf.float32, scope="tweet")
-
-		# concatenate the backward and forward cells
-		self.concat_outputs = tf.concat(self.outputs, 2)
-
-		# attention layer
-		self.att_context_vector = tf.tanh(
-			tf.tensordot(self.concat_outputs, self.weights["att1-w"], axes=1) + self.bias["att1-w"])
-		self.attentions = tf.nn.softmax(tf.tensordot(self.att_context_vector, self.weights["att1-v"], axes=1))
-		self.attention_output_raw = tf.reduce_sum(self.concat_outputs * tf.expand_dims(self.attentions, -1), 1)
-
-		# reshape the output for the next layers
-		self.attention_output = tf.reshape(self.attention_output_raw, [FLAGS.batch_size, FLAGS.tweet_per_user, 2 * FLAGS.rnn_cell_size])
-
-		return self.attention_output
+		self.rnn_output_gender = tf.reshape(self.rnn_output_gender,
+									 [FLAGS.batch_size, 2 * FLAGS.semantic_rnn_cell_size])
 
 
-	############################################################################################################################
-	def captioning(self):
-		pass
-
-
-	############################################################################################################################
-	def cnn(self, sequence_length, num_classes, vocab_size, embedding_size, filter_sizes, num_filters):
-		# CNN placeholders
-		self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
-		self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
-
-		# Embedding layer
-		with tf.name_scope("embedding"):
-			W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), name="W")
-			self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
-			self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
-
-		# Create a convolution + maxpool layer for each filter size
-		pooled_outputs = []
-		for i, filter_size in enumerate(filter_sizes):
-			with tf.name_scope("conv-maxpool-%s" % filter_size):
-				# Convolution Layer
-				filter_shape = [filter_size, embedding_size, 1, num_filters]
-				W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
-				b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b-noreg")
-				conv = tf.nn.conv2d(
-					self.embedded_chars_expanded,
-					W,
-					strides=[1, 1, 1, 1],
-					padding="VALID",
-					name="conv")
-				# Apply nonlinearity
-				h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
-				# Maxpooling over the outputs
-				pooled = tf.nn.max_pool(
-					h,
-					ksize=[1, sequence_length - filter_size + 1, 1, 1],
-					strides=[1, 1, 1, 1],
-					padding='VALID',
-					name="pool")
-				pooled_outputs.append(pooled)
-
-		# Combine all the pooled features
-		num_filters_total = num_filters * len(filter_sizes)
-		self.h_pool = tf.concat(pooled_outputs, 3)
-		self.h_pool_flat = tf.reshape(self.h_pool, [-1, num_filters_total])
-
-		return self.h_pool_flat
+		return self.rnn_output_age, self.rnn_output_job, self.rnn_output_genders

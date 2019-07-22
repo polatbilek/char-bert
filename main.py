@@ -16,12 +16,12 @@ if __name__ == "__main__":
 
 	print("\treading word embeddings...")
 	old = time.time()
-	#embeddings = readFastTextEmbeddings(FLAGS.word_embed_path)
+	embeddings = readFastTextEmbeddings(FLAGS.word_embed_path)
 	print("reading embeddings took " + str(time.time() - old) + " sec")
 
 	print("\treading tweets...")
 	old = time.time()
-	ground_truth = readData(FLAGS.training_data_path)
+	ground_truth = readData(FLAGS.data_path)
 	print("reading data took "+ str(time.time()-old) + " sec")
 
 	sys.exit()
