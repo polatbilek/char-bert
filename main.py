@@ -1,4 +1,4 @@
-
+from model import network
 from train import *
 from test import *
 import sys
@@ -11,21 +11,22 @@ if __name__ == "__main__":
 	print("\treading word embeddings...")
 	embeddings, vocabulary = readFastTextEmbeddings(FLAGS.word_embed_path)
 
-	print("\treading tweets...")
+	print("\treading texts...")
 	ground_truth, data = readData(FLAGS.data_path)
 
 	print("\tconstructing datasets and network...")
-	training_data, training_gt, valid_data, valid_users, test_data, test_users = partite_dataset(ground_truth, data)
+	training_data, training_gt, valid_data, valid_users, test_data, test_users = partite_dataset(data, ground_truth)
 
 
 	# hyperparameter optimization if it is set
 	if FLAGS.optimize == False:
 		# print specs
 		print("---TRAINING STARTED---")
-		model_specs = "with parameters: Learning Rate:" + str(
-			FLAGS.learning_rate) + ", Regularization parameter:" + str(FLAGS.l2_reg_lambda) + ", cell size:"
-		model_specs += str(FLAGS.rnn_cell_size) + ", embedding size:" + str(
-			FLAGS.word_embedding_size)
+		model_specs = "With parameters: Learning Rate:" + str(FLAGS.learning_rate) + \
+					  ", Regularization parameter:" + str(FLAGS.l2_reg_lambda) +\
+					  ", Global cell size:" + str(FLAGS.global_rnn_cell_size) + \
+					  ", Semantic cell size: " + str(FLAGS.semantic_rnn_cell_size) + \
+					  ", Fully connected size: " + str(FLAGS.fc_size)
 		print(model_specs)
 
 		# run the network
@@ -46,10 +47,11 @@ if __name__ == "__main__":
 
 					# print specs
 					print("---TRAINING STARTED---")
-					model_specs = "with parameters: Learning Rate:" + str(
-						FLAGS.learning_rate) + ", Regularization parameter:" + str(FLAGS.l2_reg_lambda) + ", cell size:"
-					model_specs += str(FLAGS.rnn_cell_size) + ", embedding size:" + str(
-						FLAGS.word_embedding_size) + ", language:" + FLAGS.lang
+					model_specs = "With parameters: Learning Rate:" + str(FLAGS.learning_rate) + \
+								  ", Regularization parameter:" + str(FLAGS.l2_reg_lambda) + \
+								  ", Global cell size:" + str(FLAGS.global_rnn_cell_size) + \
+								  ", Semantic cell size: " + str(FLAGS.semantic_rnn_cell_size) + \
+								  ", Fully connected size: " + str(FLAGS.fc_size)
 					print(model_specs)
 
 					# take the logs
@@ -63,9 +65,7 @@ if __name__ == "__main__":
 					train(net, training_data, training_gt, valid_data, valid_users, vocabulary, embeddings, ground_truth)
 
 	print("---TESTING STARTED---")
-	print("\treading tweets for test...")
-	tweets, users, target_values, seq_lengths = readData(FLAGS.test_data_path)
-	print("\ttest set size: " + str(len(tweets)))
+	print("\ttest set size: " + str(len(test_data)))
 
 	# finds every model in FLAGS.model_path and runs every single one
 	if FLAGS.optimize == True:
@@ -83,10 +83,10 @@ if __name__ == "__main__":
 					FLAGS.rnn_cell_size = 50
 
 				net = network(embeddings)
-				test(net, tweets, users, seq_lengths, target_values, vocabulary, embeddings)
+				test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
 	# just runs  single model specified in FLAGS.model_path and FLAGS.model_name
 	else:
 		tf.reset_default_graph()
 		net = network(embeddings)
-		test(net, tweets, users, seq_lengths, target_values, vocabulary, embeddings)
+		test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
 

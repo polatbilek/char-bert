@@ -9,7 +9,7 @@ class flags(object):
 
 		#input file paths
 		self.word_embed_path = "/home/darg2/Desktop/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
-		self.data_path = "/home/darg2/Desktop/new_blogs"#"C:\\Users\\polat\\Desktop\\new_blogs"
+		self.data_path = "/home/darg2/Desktop/mini_set"#"C:\\Users\\polat\\Desktop\\new_blogs"
 
 		#output file paths
 		self.model_path = "/media/cvrg/HDD/darg/models/ar"
@@ -37,7 +37,7 @@ class flags(object):
 		self.numof_gender_classes = 2
 
 			#RNN
-		self.embedding_size = 200
+		self.embedding_size = 300
 		self.global_rnn_cell_size = 150
 		self.semantic_rnn_cell_size = 100
 		self.fc_size = 2*self.semantic_rnn_cell_size

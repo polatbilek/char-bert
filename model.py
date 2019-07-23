@@ -8,11 +8,11 @@ class network(object):
 	############################################################################################################################
 	def __init__(self, embeddings):
 		self.prediction = []
-		self.cells = []
+		self.cells = {}
 
 		# create word embeddings
-		self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[embeddings.shape[0], embeddings.shape[1]]), trainable=False, name="tf_embeddings")
-		self.embedding_placeholder = tf.placeholder(tf.float32, [embeddings.shape[0], embeddings.shape[1]])
+		self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[1999998, 300]), trainable=False, name="tf_embeddings")
+		self.embedding_placeholder = tf.placeholder(tf.float32, [1999998, 300])
 		# initialize this once  with sess.run when the session begins
 		self.embedding_init = self.tf_embeddings.assign(self.embedding_placeholder)
 
@@ -23,7 +23,7 @@ class network(object):
 		self.Y_gender = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_gender_classes])
 		self.Y_job = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_job_classes])
 
-		self.sequence_length = tf.placeholder(tf.int32, [FLAGS.batch_size * FLAGS.tweet_per_user])
+		self.sequence_length = tf.placeholder(tf.int32, FLAGS.batch_size)
 		self.reg_param = tf.placeholder(tf.float32, shape=[])
 
 
@@ -95,7 +95,8 @@ class network(object):
 		self.correct_pred = tf.equal(tf.argmax(self.prediction, 1), tf.argmax(self.Y_gender, 1))
 		self.accuracy_gender = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
 
-		return self.prediction_age, self.prediction_job, self.prediction_gender
+		return self.prediction_age, self.prediction_job, self.prediction_gender, \
+			   self.accuracy_age, self.accuracy_job, self.accuracy_gender
 
 
 
@@ -120,7 +121,7 @@ class network(object):
 		self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
 		self.train = self.optimizer.minimize(self.loss)
 
-		return self.accuracy, self.loss, self.train
+		return self.loss, self.train
 
 
 
@@ -138,12 +139,14 @@ class network(object):
 
 		# concatenate the backward and forward cells of global to feed them into higher layer
 		self.global_rnn_output = tf.concat([self.outputs[0], self.outputs[1]], 1)
+		self.seqlen_semantic_layer = [300 for i in range(FLAGS.batch_size)]
+
 
 		# age rnn layer
 		(self.outputs_age, self.output_states_age) = tf.nn.bidirectional_dynamic_rnn(self.cells["age-fw"],
 																			 self.cells["age-bw"],
 																			 self.global_rnn_output,
-																			 FLAGS.global_rnn_cell_size , dtype=tf.float32,
+																			 self.seqlen_semantic_layer , dtype=tf.float32,
 																			 scope="age-rnn")
 
 
@@ -151,7 +154,7 @@ class network(object):
 		(self.outputs_job, self.output_states_job) = tf.nn.bidirectional_dynamic_rnn(self.cells["job-fw"],
 																			 self.cells["job-bw"],
 																			 self.global_rnn_output,
-																			 FLAGS.global_rnn_cell_size, dtype=tf.float32,
+																			 self.seqlen_semantic_layer, dtype=tf.float32,
 																			 scope="job-rnn")
 
 
@@ -159,7 +162,7 @@ class network(object):
 		(self.outputs_gender, self.output_states_gender) = tf.nn.bidirectional_dynamic_rnn(self.cells["gender-fw"],
 																			 self.cells["gender-bw"],
 																			 self.global_rnn_output,
-																			 FLAGS.global_rnn_cell_size, dtype=tf.float32,
+																			 self.seqlen_semantic_layer, dtype=tf.float32,
 																			 scope="gender-rnn")
 
 		# concatenate the backward and forward cells of semantic layers
@@ -179,4 +182,4 @@ class network(object):
 									 [FLAGS.batch_size, 2 * FLAGS.semantic_rnn_cell_size])
 
 
-		return self.rnn_output_age, self.rnn_output_job, self.rnn_output_genders
+		return self.rnn_output_age, self.rnn_output_job, self.rnn_output_gender

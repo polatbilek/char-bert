@@ -18,20 +18,24 @@ from tqdm import tqdm
 def readFastTextEmbeddings(path):
 	fin = io.open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
 
-	embeddings = {}
+	embeddings = []
+	vocab = {}
+	i = 0
+	fin.readline() #first line is metadata about embeddings
+
 	for line in tqdm(fin):
 		tokens = line.rstrip().split(' ')
-		embeddings[tokens[0]] = np.asarray(list(map(float, tokens[1:])))
+		embeddings.append(np.asarray(list(map(float, tokens[1:]))))
+		vocab[tokens[0]] = i
+		i += 1
 
-	embeddings["<PAD>"] = np.random.randn(FLAGS.embedding_size) #Padding vector
-	embeddings["<UNK>"] = np.random.randn(FLAGS.embedding_size) #Unknown word vector
+	vocab["<PAD>"] = i
+	i  += 1
+	embeddings.append(np.random.randn(FLAGS.embedding_size)) #Padding vector
+	vocab["<UNK>"] = i
+	embeddings.append(np.random.randn(FLAGS.embedding_size)) #Unknown word vector
 
-	vocab = {}
-
-	for i in range(len(list(embeddings.keys()))):
-		vocab[list(embeddings.keys())[i]] = i
-
-	return np.array(list(embeddings.values())), vocab
+	return np.array(embeddings), vocab
 
 
 
@@ -103,17 +107,17 @@ def readData(path):
 #########################################################################################################################
 # Changes tokenized words to their corresponding ids in vocabulary
 #
-# input: list (tweets) - List of tweets
-#        dict (vocab)  - Dictionary of the vocabulary of GloVe
+# input: list (data)   - List of data
+#        dict (vocab)  - Dictionary of the vocabulary
 #
-# output: list (batch_tweet_ids) - List of corresponding ids of words in the tweet w.r.t. vocabulary
+# output: list (batch) - List of corresponding ids of words in the text w.r.t. vocabulary
 def word2id(data, vocab):
-    batch = []
+	batch = []
 
-    for i in range(FLAGS.batch_size): #loop of users
+	for i in range(FLAGS.batch_size): #loop of users
 		data_as_wordids = []
 
-		for word in data: #loop in words of tweet
+		for word in data: #loop in words of each text
 			if word != "<PAD>":
 				word = word.lower()
 
@@ -124,7 +128,7 @@ def word2id(data, vocab):
 
 		batch.append(data_as_wordids)
 
-    return batch
+	return batch
 
 
 
@@ -154,8 +158,10 @@ def user2target(batch_users, ground_truth):
 #	     int  (iter_no)      - Current # of iteration we are on
 #
 # output: list (batch_input)       - Ids of each words to be used in tf_embedding_lookup
-# 	      list (batch_targets)     - Target values to be fed to the rnn
-#	      list (batch_seqlen)      - Number of words in each tweet(gives us the # of time unrolls)
+# 	      list (targets_age)       - Target values for age ground turth to be fed to the rnn
+#		  list (targets_job)       - Target values for job ground turth to be fed to the rnn
+#		  list (targets_gender)    - Target values for gender ground turth to be fed to the rnn
+#	      list (batch_seqlen)      - Number of words in each text (gives us the # of time unrolls)
 def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 
 	start = iter_no * FLAGS.batch_size
@@ -211,8 +217,8 @@ def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 # 						         To get user info, you need to query ground-truth dictionary like gt['11213'].
 def partite_dataset(data, ground_truth):
 
-	training_set_size = int(len(data) * FLAGS.training_set_size)
-	valid_set_size = int(len(data) * FLAGS.validation_set_size) + training_set_size
+	training_set_size = int(len(list(ground_truth.keys())) * FLAGS.training_set_size)
+	valid_set_size = int(len(list(ground_truth.keys())) * FLAGS.validation_set_size) + training_set_size
 
 	training_data = []
 	valid_data = []
