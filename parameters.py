@@ -21,6 +21,7 @@ class flags(object):
 		self.model_save_threshold_age = 0.75
 		self.model_save_threshold_job = 0.75
 		self.model_save_threshold_gender = 0.75
+		self.use_pretrained_model = False
 		self.optimize = False #if true below values will be used for hyper parameter optimization, or if testing is run: all the models in model_path will be tested
 							 #if false hyperparameters specified in "model hyperparameters" will be used, and for testing model with model_name and model_path will be used
 		self.l_rate = [0.01]
