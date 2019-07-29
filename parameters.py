@@ -8,8 +8,8 @@ class flags(object):
 		self.training_set_size = 0.75
 
 		#input file paths
-		self.word_embed_path = "/home/darg2/Desktop/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
-		self.data_path = "/home/darg2/Desktop/mini_set"#"C:\\Users\\polat\\Desktop\\new_blogs"
+		self.word_embed_path = "/home/darg1/Desktop/ozan/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
+		self.data_path = "/home/darg1/Desktop/ozan/mini_set"#"C:\\Users\\polat\\Desktop\\new_blogs"
 
 		#output file paths
 		self.model_path = "/media/cvrg/HDD/darg/models/ar"

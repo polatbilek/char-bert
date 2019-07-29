@@ -101,6 +101,8 @@ def readData(path):
 		except:
 			pass
 
+	random.shuffle(data)
+
 	return ground_truth, data
 
 
@@ -171,7 +173,7 @@ def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 		end = len(data)
 
 	batch_data = data[start:end]
-	batch_users = users[start:end]
+	batch_users = [d[1] for d in batch_data]
 	batch_seqlen = [d[0] for d in batch_data]
 
 	batch_targets = user2target(batch_users, ground_truth)
@@ -194,10 +196,21 @@ def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 
 	batch_input = word2id(batch_input, vocabulary)
 
-	#user level shuffling
-	c = list(zip(batch_input, batch_targets, batch_seqlen))
-	random.shuffle(c)
-	batch_input, batch_targets, batch_seqlen = zip(*c)
+	try:
+		#user level shuffling
+		c = list(zip(batch_input, batch_targets, batch_seqlen))
+		random.shuffle(c)
+		batch_input, batch_targets, batch_seqlen = zip(*c)
+	except:
+		print(iter_no)
+		print(start)
+		print(end)
+		print(len(data))
+		print(len(batch_input))
+		print(len(batch_data))
+		print(len(batch_users))
+		print(len(batch_seqlen))
+		sys.exit()
 
 	targets_age = [t[0] for t in batch_targets]
 	targets_job = [t[1] for t in batch_targets]
@@ -241,7 +254,7 @@ def partite_dataset(data, ground_truth):
 			test_data.append(post)
 
 
-	print("Training set size=" + str(len(training_data)) + " Validation set size=" + str(len(valid_data)) + " Test set size=" + str(len(test_data)))
+	print("Training data-set size=" + str(len(training_data)) + " Validation data-set size=" + str(len(valid_data)) + " Test data-set size=" + str(len(test_data)))
+	print("Training user-set size=" + str(len(training_data)) + " Validation user-set size=" + str(len(valid_data)) + " Test user-set size=" + str(len(test_data)))
 
 	return training_data, training_users, valid_data, valid_users, test_data, test_users
-

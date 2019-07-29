@@ -3,12 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a411aaab-5d0c-4d7c-b9e2-63b8958ac701" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/parameters.py" beforeDir="false" afterPath="$PROJECT_DIR$/parameters.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocess.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -42,12 +37,6 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="236" />
-    <option name="y" value="154" />
-    <option name="width" value="1352" />
-    <option name="height" value="809" />
   </component>
   <component name="ProjectId" id="1Ofshsu50O19B2jInufHdS8jJ6o" />
   <component name="PropertiesComponent">
@@ -264,7 +253,8 @@
       <workItem from="1563886696249" duration="5956000" />
       <workItem from="1564033623294" duration="15000" />
       <workItem from="1564033649678" duration="3279000" />
-      <workItem from="1564380114780" duration="659000" />
+      <workItem from="1564380114780" duration="1018000" />
+      <workItem from="1564381944858" duration="632000" />
     </task>
     <task id="LOCAL-00001" summary="reading dataset and embedding added, memory issue todo">
       <created>1556890501413</created>
@@ -322,7 +312,14 @@
       <option name="project" value="LOCAL" />
       <updated>1564036575854</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Eveything is working, first training is conducted.">
+      <created>1564380798203</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1564380798203</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -363,7 +360,8 @@
     <MESSAGE value="hypothetically model, training, preprocess, main ok. Never tested." />
     <MESSAGE value="preprocess is tested, tf placeholders got some problems, needs huge ram." />
     <MESSAGE value="Turned it into CPU version, still got sigsegv 11 signal" />
-    <option name="LAST_COMMIT_MESSAGE" value="Turned it into CPU version, still got sigsegv 11 signal" />
+    <MESSAGE value="Eveything is working, first training is conducted." />
+    <option name="LAST_COMMIT_MESSAGE" value="Eveything is working, first training is conducted." />
   </component>
   <component name="masterDetails">
     <states>
