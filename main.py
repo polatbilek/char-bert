@@ -89,4 +89,3 @@ if __name__ == "__main__":
 		tf.reset_default_graph()
 		net = network(embeddings)
 		test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
-

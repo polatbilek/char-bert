@@ -117,7 +117,7 @@ def word2id(data, vocab):
 	for i in range(FLAGS.batch_size): #loop of users
 		data_as_wordids = []
 
-		for word in data: #loop in words of each text
+		for word in data[i]: #loop in words of each text
 			if word != "<PAD>":
 				word = word.lower()
 
@@ -180,6 +180,7 @@ def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 	max_text_length = max(batch_seqlen)
 
 	batch_input = []
+
 	for text in batch_data:
 
 		padded_text = []
@@ -243,5 +244,4 @@ def partite_dataset(data, ground_truth):
 	print("Training set size=" + str(len(training_data)) + " Validation set size=" + str(len(valid_data)) + " Test set size=" + str(len(test_data)))
 
 	return training_data, training_users, valid_data, valid_users, test_data, test_users
-
 
