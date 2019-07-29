@@ -255,6 +255,6 @@ def partite_dataset(data, ground_truth):
 
 
 	print("Training data-set size=" + str(len(training_data)) + " Validation data-set size=" + str(len(valid_data)) + " Test data-set size=" + str(len(test_data)))
-	print("Training user-set size=" + str(len(training_data)) + " Validation user-set size=" + str(len(valid_data)) + " Test user-set size=" + str(len(test_data)))
+	print("Training user-set size=" + str(len(training_users)) + " Validation user-set size=" + str(len(valid_users)) + " Test user-set size=" + str(len(test_users)))
 
 	return training_data, training_users, valid_data, valid_users, test_data, test_users
