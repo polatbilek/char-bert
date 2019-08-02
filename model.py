@@ -12,8 +12,8 @@ class network(object):
 			self.cells = {}
 
 			# create word embeddings
-			self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[1999997, 300]), trainable=False, name="tf_embeddings")
-			self.embedding_placeholder = tf.placeholder(tf.float32, [1999997, 300])
+			self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[len(embeddings), len(embeddings[0])]), trainable=False, name="tf_embeddings")
+			self.embedding_placeholder = tf.placeholder(tf.float32, [len(embeddings), len(embeddings[0])])
 			# initialize this once  with sess.run when the session begins
 			self.embedding_init = self.tf_embeddings.assign(self.embedding_placeholder)
 
