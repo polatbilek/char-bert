@@ -8,13 +8,16 @@ import sys
 def test(network, test_data, test_users, vocabulary, embeddings, ground_truth):
 	saver = tf.train.Saver(max_to_keep=None)
 
+
+	config = tf.ConfigProto()
+	config.gpu_options.allow_growth = True
 	with tf.device('/gpu:0'):
-		with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+		with tf.Session(config=config) as sess:
 
 			# init variables
-			init = tf.global_variables_initializer()
-			sess.run(init)
-			sess.run(network.embedding_init, feed_dict={network.embedding_placeholder: embeddings})
+			#init = tf.global_variables_initializer()
+			#sess.run(init)
+			#sess.run(network.embedding_init, feed_dict={network.embedding_placeholder: embeddings})
 
 			# load the model from checkpoint file if it is required
 			if FLAGS.use_pretrained_model == True:

@@ -7,22 +7,24 @@ class network(object):
 
 	############################################################################################################################
 	def __init__(self, embeddings):
-		with tf.device('/gpu:0'):
-			self.prediction = []
-			self.cells = {}
+		
+		self.prediction = []
+		self.cells = {}
 
+		with tf.device('/cpu:0'):
 			# create word embeddings
 			self.tf_embeddings = tf.Variable(tf.constant(0.0, shape=[len(embeddings), len(embeddings[0])]), trainable=False, name="tf_embeddings")
 			self.embedding_placeholder = tf.placeholder(tf.float32, [len(embeddings), len(embeddings[0])])
 			# initialize this once  with sess.run when the session begins
 			self.embedding_init = self.tf_embeddings.assign(self.embedding_placeholder)
 
+		with tf.device('/gpu:0'):
 			# RNN placeholders
 			self.X = tf.placeholder(tf.int32, [FLAGS.batch_size, None])
 
-			self.Y_age = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_age_classes])
-			self.Y_gender = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_gender_classes])
-			self.Y_job = tf.placeholder(tf.float64, [FLAGS.batch_size, FLAGS.numof_job_classes])
+			self.Y_age = tf.placeholder(tf.float32, [FLAGS.batch_size, FLAGS.numof_age_classes])
+			self.Y_gender = tf.placeholder(tf.float32, [FLAGS.batch_size, FLAGS.numof_gender_classes])
+			self.Y_job = tf.placeholder(tf.float32, [FLAGS.batch_size, FLAGS.numof_job_classes])
 
 			self.sequence_length = tf.placeholder(tf.int32, FLAGS.batch_size)
 			self.reg_param = tf.placeholder(tf.float32, shape=[])
@@ -129,44 +131,49 @@ class network(object):
 
 	############################################################################################################################
 	def rnn(self):
-		with tf.device('/gpu:0'):
+		with tf.device('/cpu:0'):
 			# embedding layer
 			self.rnn_input = tf.nn.embedding_lookup(self.tf_embeddings, self.X)
 
 			# global rnn layer
 			(self.outputs, self.output_states) = tf.nn.bidirectional_dynamic_rnn(self.cells["global-fw"],
-																				 self.cells["global-bw"],
-																				 self.rnn_input,
-																				 self.sequence_length, dtype=tf.float32,
-																				 scope="global-rnn")
+												self.cells["global-bw"],
+												self.rnn_input,
+												self.sequence_length,
+												dtype=tf.float32,
+												scope="global-rnn")
 
 			# concatenate the backward and forward cells of global to feed them into higher layer
-			self.global_rnn_output = tf.concat([self.outputs[0], self.outputs[1]], 1)
-			self.seqlen_semantic_layer = [300 for i in range(FLAGS.batch_size)]
+			self.global_rnn_output = tf.concat([self.outputs[0], self.outputs[1]], -1)
+			self.seqlen_semantic_layer = [2*FLAGS.global_rnn_cell_size for i in range(FLAGS.batch_size)]
 
 
 			# age rnn layer
 			(self.outputs_age, self.output_states_age) = tf.nn.bidirectional_dynamic_rnn(self.cells["age-fw"],
-																				 self.cells["age-bw"],
-																				 self.global_rnn_output,
-																				 self.seqlen_semantic_layer , dtype=tf.float32,
-																				 scope="age-rnn")
+													self.cells["age-bw"],
+													self.global_rnn_output,
+													self.sequence_length, 
+													dtype=tf.float32,
+													scope="age-rnn")
 
 
 			# job rnn layer
 			(self.outputs_job, self.output_states_job) = tf.nn.bidirectional_dynamic_rnn(self.cells["job-fw"],
-																				 self.cells["job-bw"],
-																				 self.global_rnn_output,
-																				 self.seqlen_semantic_layer, dtype=tf.float32,
-																				 scope="job-rnn")
+													self.cells["job-bw"],
+													self.global_rnn_output,
+													self.sequence_length, 
+													dtype=tf.float32,
+													scope="job-rnn")
 
 
 			# gender rnn layer
 			(self.outputs_gender, self.output_states_gender) = tf.nn.bidirectional_dynamic_rnn(self.cells["gender-fw"],
-																				 self.cells["gender-bw"],
-																				 self.global_rnn_output,
-																				 self.seqlen_semantic_layer, dtype=tf.float32,
-																				 scope="gender-rnn")
+													self.cells["gender-bw"],
+													self.global_rnn_output,
+													self.sequence_length,
+													dtype=tf.float32,
+													scope="gender-rnn")
+
 
 			# concatenate the backward and forward cells of semantic layers
 			self.rnn_output_age = tf.concat([self.output_states_age[0], self.output_states_age[1]], 1)

@@ -38,6 +38,25 @@ def readFastTextEmbeddings(path):
 	return np.array(embeddings), vocab
 
 
+def trim_data(data):
+	new_data=[]
+	
+	for i in range(len(data)):
+		if data[i][0] < 10000:
+			new_data.append(data[i])
+
+	return new_data
+
+
+def max_seq_len(data):
+
+	max_len = 0
+	for point in data:
+		if point[0] > max_len:
+			max_len = point[0]
+
+	return max_len
+
 
 #########################################################################################################################
 # Reads training dataset
@@ -101,6 +120,8 @@ def readData(path):
 		except:
 			pass
 
+	data = trim_data(data)
+
 	random.shuffle(data)
 
 	return ground_truth, data
@@ -116,7 +137,7 @@ def readData(path):
 def word2id(data, vocab):
 	batch = []
 
-	for i in range(FLAGS.batch_size): #loop of users
+	for i in range(len(data)): #loop of users
 		data_as_wordids = []
 
 		for word in data[i]: #loop in words of each text
@@ -196,21 +217,11 @@ def prepWordBatchData(data, users, ground_truth, vocabulary, iter_no):
 
 	batch_input = word2id(batch_input, vocabulary)
 
-	try:
-		#user level shuffling
-		c = list(zip(batch_input, batch_targets, batch_seqlen))
-		random.shuffle(c)
-		batch_input, batch_targets, batch_seqlen = zip(*c)
-	except:
-		print(iter_no)
-		print(start)
-		print(end)
-		print(len(data))
-		print(len(batch_input))
-		print(len(batch_data))
-		print(len(batch_users))
-		print(len(batch_seqlen))
-		sys.exit()
+
+	#user level shuffling
+	c = list(zip(batch_input, batch_targets, batch_seqlen))
+	random.shuffle(c)
+	batch_input, batch_targets, batch_seqlen = zip(*c)
 
 	targets_age = [t[0] for t in batch_targets]
 	targets_job = [t[1] for t in batch_targets]
@@ -258,3 +269,4 @@ def partite_dataset(data, ground_truth):
 	print("Training user-set size=" + str(len(training_users)) + " Validation user-set size=" + str(len(valid_users)) + " Test user-set size=" + str(len(test_users)))
 
 	return training_data, training_users, valid_data, valid_users, test_data, test_users
+

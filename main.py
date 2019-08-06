@@ -17,7 +17,7 @@ if __name__ == "__main__":
 	print("\tconstructing datasets and network...")
 	training_data, training_gt, valid_data, valid_users, test_data, test_users = partite_dataset(data, ground_truth)
 
-
+	net = 0
 	# hyperparameter optimization if it is set
 	if FLAGS.optimize == False:
 		# print specs
@@ -86,6 +86,5 @@ if __name__ == "__main__":
 				test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
 	# just runs  single model specified in FLAGS.model_path and FLAGS.model_name
 	else:
-		tf.reset_default_graph()
-		net = network(embeddings)
-		test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
+		#net = network(embeddings)
+		test(net, test_data, test_users, vocabulary, embeddings, ground_truth)

@@ -7,14 +7,15 @@ class flags(object):
 		self.validation_set_size = 0.1
 		self.training_set_size = 0.75
 
+
 		#input file paths
 		self.word_embed_path = "/home/darg1/Desktop/ozan/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
-		self.data_path = "/home/darg1/Desktop/ozan/mini_set"#"C:\\Users\\polat\\Desktop\\new_blogs"
+		self.data_path = "/home/darg1/Desktop/ozan/blogs/blogs"#"C:\\Users\\polat\\Desktop\\new_blogs"
 
 		#output file paths
 		self.model_path = "/media/cvrg/HDD/darg/models/ar"
 		self.model_name = "en-model-0.001-0.0001-0.ckpt"
-		self.log_path = "/home/cvrg/darg/logs/logs_CNN_RNN_ar.txt"
+		self.log_path = "/home/darg1/Desktop/ozan/logs.txt"
 
 
 		#optimization parameters
@@ -31,7 +32,7 @@ class flags(object):
 
 		#########################################################################################################################
 		# Model Hyperparameters
-		self.l2_reg_lambda = 0.00005
+		self.l2_reg_lambda = 0.0005
 		self.learning_rate = 0.001
 
 		# Number of classes
@@ -48,8 +49,8 @@ class flags(object):
 
 		##########################################################################################################################
 		# Training parameters
-		self.batch_size = 10
-		self.num_epochs = 18
-		self.evaluate_every = 5
+		self.batch_size = 16
+		self.num_epochs = 15
+		self.evaluate_every = 15
 
 FLAGS = flags()
