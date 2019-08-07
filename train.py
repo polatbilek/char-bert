@@ -233,17 +233,37 @@ def train(network, training_data, training_users, valid_data, valid_users, vocab
 
 				f.close()
 
-			# save the model if it performs above the threshold. Naming convention:
-			# model-{"global_rnn_size"}-{"semantic_rnn_size"}-{"learning rate"}-{"reg. param."}-{"epoch number"}
-			if batch_accuracy_age >= FLAGS.model_save_threshold_age:
-				if batch_accuracy_job >= FLAGS.model_save_threshold_job:
-					if batch_accuracy_gender >= FLAGS.model_save_threshold_gender:
-						model_name = "model-" + str(FLAGS.global_rnn_cell_size) + "-" \
-									 + str(FLAGS.semantic_rnn_cell_size) + "-"\
-									 + str(FLAGS.learning_rate) + "-" \
-									 + str(FLAGS.l2_reg_lambda) + "-" \
-									 + str(epoch) + ".ckpt"
 
-						save_as = os.path.join(FLAGS.model_path, model_name)
-						save_path = saver.save(sess, save_as)
-						print("Model saved in path: %s" % save_path)
+		model_name = "model-" + str(FLAGS.global_rnn_cell_size) + "-" \
+					+ str(FLAGS.semantic_rnn_cell_size) + "-"\
+					+ str(FLAGS.learning_rate) + "-" \
+					+ str(FLAGS.l2_reg_lambda) + "-" \
+					+ str(epoch) + ".ckpt"
+		FLAGS.model_name = model_name
+
+		save_as = os.path.join(FLAGS.model_path, model_name)
+
+		save_path = saver.save(sess, save_as)
+
+		print("Model saved in path: %s" % save_path)
+
+		'''
+		# save the model if it performs above the threshold. Naming convention:
+		# model-{"global_rnn_size"}-{"semantic_rnn_size"}-{"learning rate"}-{"reg. param."}-{"epoch number"}
+		if batch_accuracy_age >= FLAGS.model_save_threshold_age:
+			if batch_accuracy_job >= FLAGS.model_save_threshold_job:
+				if batch_accuracy_gender >= FLAGS.model_save_threshold_gender:
+					model_name = "model-" + str(FLAGS.global_rnn_cell_size) + "-" \
+								 + str(FLAGS.semantic_rnn_cell_size) + "-"\
+								 + str(FLAGS.learning_rate) + "-" \
+								 + str(FLAGS.l2_reg_lambda) + "-" \
+								 + str(epoch) + ".ckpt"
+
+					save_as = os.path.join(FLAGS.model_path, model_name)
+					save_path = saver.save(sess, save_as)
+
+					print("Model saved in path: %s" % save_path)
+
+		'''
+
+

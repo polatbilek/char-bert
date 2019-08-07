@@ -15,7 +15,7 @@ if __name__ == "__main__":
 	ground_truth, data = readData(FLAGS.data_path)
 
 	print("\tconstructing datasets and network...")
-	training_data, training_gt, valid_data, valid_users, test_data, test_users = partite_dataset(data, ground_truth)
+	training_data, training_users, valid_data, valid_users, test_data, test_users = partite_dataset(data, ground_truth)
 
 	net = 0
 	# hyperparameter optimization if it is set
@@ -32,7 +32,11 @@ if __name__ == "__main__":
 		# run the network
 		tf.reset_default_graph()
 		net = network(embeddings)
-		train(net, training_data, training_gt, valid_data, valid_users, vocabulary, embeddings, ground_truth)
+		train(net, training_data, training_users, valid_data, valid_users, vocabulary, embeddings, ground_truth)
+
+		print("---TESTING STARTED---")
+		print("\ttest set size: " + str(len(test_data)))
+		test(net, test_data, test_users, vocabulary, embeddings, ground_truth)
 
 	else:
 		for rnn_cell_size in FLAGS.rnn_cell_sizes:
@@ -63,28 +67,4 @@ if __name__ == "__main__":
 
 					# start training
 					train(net, training_data, training_gt, valid_data, valid_users, vocabulary, embeddings, ground_truth)
-
-	print("---TESTING STARTED---")
-	print("\ttest set size: " + str(len(test_data)))
-
-	# finds every model in FLAGS.model_path and runs every single one
-	if FLAGS.optimize == True:
-		models = os.listdir(FLAGS.model_path)
-		for model in models:
-			if model.endswith(".ckpt.index"):
-				FLAGS.model_name = model[:-6]
-				tf.reset_default_graph()
-
-				if "150" in FLAGS.model_name:
-					FLAGS.rnn_cell_size = 150
-				elif "100" in FLAGS.model_name:
-					FLAGS.rnn_cell_size = 100
-				elif "50" in FLAGS.model_name:
-					FLAGS.rnn_cell_size = 50
-
-				net = network(embeddings)
-				test(network, test_data, test_users, vocabulary, embeddings, ground_truth)
-	# just runs  single model specified in FLAGS.model_path and FLAGS.model_name
-	else:
-		#net = network(embeddings)
-		test(net, test_data, test_users, vocabulary, embeddings, ground_truth)
+		

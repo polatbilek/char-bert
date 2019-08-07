@@ -10,10 +10,10 @@ class flags(object):
 
 		#input file paths
 		self.word_embed_path = "/home/darg1/Desktop/ozan/crawl-300d-2M.vec"#"C:\\Users\\polat\\Desktop\\fasttext\\crawl-300d-2M.vec"
-		self.data_path = "/home/darg1/Desktop/ozan/blogs/blogs"#"C:\\Users\\polat\\Desktop\\new_blogs"
+		self.data_path = "/home/darg1/Desktop/ozan/set"#"C:\\Users\\polat\\Desktop\\new_blogs"
 
 		#output file paths
-		self.model_path = "/media/cvrg/HDD/darg/models/ar"
+		self.model_path = "/home/darg1/Desktop/ozan/models"
 		self.model_name = "en-model-0.001-0.0001-0.ckpt"
 		self.log_path = "/home/darg1/Desktop/ozan/logs.txt"
 
@@ -50,7 +50,7 @@ class flags(object):
 		##########################################################################################################################
 		# Training parameters
 		self.batch_size = 16
-		self.num_epochs = 15
+		self.num_epochs = 2
 		self.evaluate_every = 15
 
 FLAGS = flags()

@@ -20,10 +20,9 @@ def test(network, test_data, test_users, vocabulary, embeddings, ground_truth):
 			#sess.run(network.embedding_init, feed_dict={network.embedding_placeholder: embeddings})
 
 			# load the model from checkpoint file if it is required
-			if FLAGS.use_pretrained_model == True:
-				load_as = os.path.join(FLAGS.model_path, FLAGS.model_name)
-				saver.restore(sess, load_as)
-				print("Loading the pretrained model from: " + str(load_as))
+			load_as = os.path.join(FLAGS.model_path, FLAGS.model_name)
+			saver.restore(sess, load_as)
+			print("Loading the pretrained model from: " + str(load_as))
 
 
 			test_batch_count = int(len(test_data) / FLAGS.batch_size)
@@ -44,10 +43,10 @@ def test(network, test_data, test_users, vocabulary, embeddings, ground_truth):
 				test_batch_y_job, \
 				test_batch_y_gender, \
 				test_batch_seqlen = prepWordBatchData(test_data,
-														test_users,
-														ground_truth,
-														vocabulary,
-														batch)
+											test_users,
+											ground_truth,
+											vocabulary,
+											batch)
 
 				# Prepare feed values
 				feed_dict = {network.X: test_batch_x,
@@ -58,10 +57,10 @@ def test(network, test_data, test_users, vocabulary, embeddings, ground_truth):
 							 network.reg_param: FLAGS.l2_reg_lambda}
 
 				# Run the computational graph
-				_, loss_age, loss_job, loss_gender, loss, \
+				loss_age, loss_job, loss_gender, loss, \
 				prediction_age, prediction_job, prediction_gender, \
 				accuracy_age, accuracy_job, accuracy_gender = sess.run(
-					[network.train, network.loss_age, network.loss_job, network.loss_gender, network.loss,
+					[network.loss_age, network.loss_job, network.loss_gender, network.loss,
 					 network.prediction_age, network.prediction_job, network.prediction_gender,
 					 network.accuracy_age, network.accuracy_job, network.accuracy_gender], feed_dict=feed_dict)
 
