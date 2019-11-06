@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a411aaab-5d0c-4d7c-b9e2-63b8958ac701" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/preprocess.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,18 +21,6 @@
         <option value="Python Script" />
       </list>
     </option>
-  </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>1908 silent film produced</find>
-      <find>&quot;generally favorable reviews&quot;</find>
-      <find>',</find>
-      <find>sequ</find>
-      <find>word2</find>
-      <find>tweet</find>
-      <find>gp</find>
-      <find>with</find>
-    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -255,6 +242,7 @@
       <workItem from="1564033649678" duration="3279000" />
       <workItem from="1564380114780" duration="1018000" />
       <workItem from="1564381944858" duration="632000" />
+      <workItem from="1573026976971" duration="3713000" />
     </task>
     <task id="LOCAL-00001" summary="reading dataset and embedding added, memory issue todo">
       <created>1556890501413</created>
