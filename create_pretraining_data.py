@@ -23,6 +23,8 @@ import random
 import tokenization
 import tensorflow as tf
 import sys
+from tqdm import tqdm
+
 flags = tf.flags
 
 FLAGS = flags.FLAGS
@@ -103,6 +105,8 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
   writer_index = 0
 
   total_written = 0
+
+  print("Writing instances....")
   for (inst_index, instance) in enumerate(instances):
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
     input_mask = [1] * len(input_ids)
@@ -188,9 +192,14 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
   # sentence boundaries for the "next sentence prediction" task).
   # (2) Blank lines between documents. Document boundaries are needed so
   # that the "next sentence prediction" task doesn't span between documents.
+  print("Reading documents....")
+  doc_index = 0
   for input_file in input_files:
     with tf.gfile.GFile(input_file, "r") as reader:
       while True:
+        if doc_index % 100000 == 0:
+          print("The index: "+str(doc_index/100000))
+
         line = tokenization.convert_to_unicode(reader.readline())
         if not line:
           break
@@ -203,14 +212,17 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
         if tokens:
           all_documents[-1].append(tokens)
 
+        doc_index += 1
+
   # Remove empty documents
   all_documents = [x for x in all_documents if x]
   rng.shuffle(all_documents)
 
   vocab_words = list(tokenizer.vocab.keys())
   instances = []
+  print("Processing documents....")
   for _ in range(dupe_factor):
-    for document_index in range(len(all_documents)):
+    for document_index in tqdm(range(len(all_documents))):
       instances.extend(
           create_instances_from_document(
               all_documents, document_index, max_seq_length, short_seq_prob,
